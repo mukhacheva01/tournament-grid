@@ -391,12 +391,101 @@ function loadTournamentData() {
 }
 
 // Глобальные функции для работы с матчами
-window.addMatch = function(db, matchData) {
-    // Реализация добавления матча
-    console.log('Adding match:', matchData);
+window.addMatch = function(matchData) {
+    if (!database) {
+        console.error('Database not initialized');
+        return;
+    }
+    
+    database.addMatch(matchData, (err, result) => {
+        if (err) {
+            console.error('Error adding match:', err);
+        } else {
+            console.log('Match added successfully:', result);
+            loadTournamentData(); // Перезагружаем данные
+            if (typeof renderTournamentBracket === 'function') {
+                renderTournamentBracket(); // Перерисовываем сетку
+            }
+        }
+    });
 };
 
-window.editMatch = function(db, matchId, matchData) {
-    // Реализация редактирования матча
-    console.log('Editing match:', matchId, matchData);
+window.editMatch = function(matchId, matchData) {
+    if (!database) {
+        console.error('Database not initialized');
+        return;
+    }
+    
+    database.updateMatch(matchId, matchData, (err, result) => {
+        if (err) {
+            console.error('Error updating match:', err);
+        } else {
+            console.log('Match updated successfully:', result);
+            loadTournamentData(); // Перезагружаем данные
+            if (typeof renderTournamentBracket === 'function') {
+                renderTournamentBracket(); // Перерисовываем сетку
+            }
+        }
+    });
 };
+
+window.deleteMatch = function(matchId) {
+    if (!database) {
+        console.error('Database not initialized');
+        return;
+    }
+    
+    database.deleteMatch(matchId, (err, result) => {
+        if (err) {
+            console.error('Error deleting match:', err);
+        } else {
+            console.log('Match deleted successfully:', result);
+            loadTournamentData(); // Перезагружаем данные
+            if (typeof renderTournamentBracket === 'function') {
+                renderTournamentBracket(); // Перерисовываем сетку
+            }
+        }
+    });
+};
+
+// Функция для получения данных турнира (для совместимости)
+window.getTournamentData = function() {
+    return tournamentData;
+};
+
+// Функция для обновления данных турнира
+window.updateTournamentData = function() {
+    loadTournamentData();
+};
+
+// Функция для получения команд
+window.getTeams = function() {
+    if (!database) {
+        console.error('Database not initialized');
+        return [];
+    }
+    return database.getTeams();
+};
+
+// Функция для получения матчей
+window.getMatches = function() {
+    if (!database) {
+        console.error('Database not initialized');
+        return [];
+    }
+    return database.getMatches();
+};
+
+// Функция настройки обработчиков событий
+function setupEventHandlers() {
+    // Обработчик для кнопки обновления
+    const updateBtn = document.getElementById('update-btn');
+    if (updateBtn) {
+        updateBtn.addEventListener('click', function() {
+            loadTournamentData();
+            if (typeof renderTournamentBracket === 'function') {
+                renderTournamentBracket();
+            }
+        });
+    }
+}
