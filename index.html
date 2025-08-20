@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+         
+        <header>
+            <div class="header-container">
+            <div class="logo">
+                
+                <h1>Пляжный волейбол</h1>
+            </div>
+            
+            
+            <nav>
+                <ul id="nav-menu">
+                    <li>
+                        <a href="#"><i class="fas fa-gavel"></i> Судейское табло</a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-calculator"></i> Турнирный калькулятор</a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-chart-line"></i> Рейтинги</a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-clipboard-list"></i> Заявка на участие</a>
+                        <div class="dropdown">
+                            <a href="#">Подать заявку</a>
+                            <a href="#">Мои заявки</a>
+                            <a href="#">Условия участия</a>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-users"></i> Организаторы турниров</a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-handshake"></i> Найти партнера</a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fab fa-vk"></i> Группа ВК</a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-trophy"></i> Создать турнир</a>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-video"></i> Обучающее видео</a>
+                        <div class="dropdown">
+                            <a href="#">Для начинающих</a>
+                            <a href="#">Тактика игры</a>
+                            <a href="#">Техника подачи</a>
+                            <a href="#">Блокирование</a>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="#"><i class="fas fa-map-marked-alt"></i> Корты для пляжного волейбола</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <h1> Турнирная сетка - Пляжный волейбол</h1>
+            <p>Онлайн просмотр результатов и сетки турнира</p>
+        </header>
+
+    <div class="tournament-info"> 
+        <div>
+            <strong>Турнир:</strong> Кубок победителей 2023
+        </div>
+        <div>
+            <strong>Дата:</strong> 15-17 сент
+        </div>
+        <div>
+            <strong>Место:</strong> г.Сочи, пляж Волна
+        </div>
+    </div>
+
+    <div class="filters">
+    <div class="filer-group">
+        <label for="category"> Категория:</label>
+        <select id="category">
+            <option>Мужчины</option>
+            <option>Женщины</option>
+        </select>
+    </div>
+
+    <div class="filer-group">
+        <label for="stage"> Стадия:</label>
+        <select id="stage">
+            <option>Финал</option>
+            <option>Групповой финал</option>
+            <option>Плей-офф</option>
+        </select>
+     </div>
+    
+    <button id="update-btn">Обновить сетку</button>
+    </div>
+
+    <div id="tournament-bracket" class="bracket">
+        <!-- Данные о матчах будут загружены из JavaScript -->
+    </div>
+
+     <script src="scripts.js"></script>
+</body>
+</html>
