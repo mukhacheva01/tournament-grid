@@ -1,491 +1,683 @@
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        // Загружаем SQL.js
-        const initSqlJs = window.initSqlJs;
-        const SQL = await initSqlJs({
-            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
-        });
+// Основные переменные состояния приложения
+let tournaments = [];
+let currentTournament = null;
+let teams = [];
+let bracketData = null;
+let isEditMode = false;
+let matchSchedule = [];
 
-        // Создаем базу данных в памяти
-        const db = new SQL.Database();
+// DOM элементы
+const tournamentsContainer = document.getElementById('tournaments-container');
+const participantsCount = document.getElementById('participants-count');
+const seededCount = document.getElementById('seeded-count');
+const tournamentDate = document.getElementById('tournament-date');
+const toggleEditBtn = document.getElementById('toggle-edit-btn');
+const teamsInputSection = document.getElementById('teams-input-section');
+const teamsList = document.getElementById('teams-list');
+const addTeamInputBtn = document.getElementById('add-team-input-btn');
+const saveTeamsBtn = document.getElementById('save-teams-btn');
+const bracketContainer = document.getElementById('bracket-container');
+const scheduleBody = document.getElementById('schedule-body');
+const createTournamentBtn = document.getElementById('create-tournament-btn');
+const generateBracketBtn = document.getElementById('generate-bracket-btn');
+const tournamentModal = document.getElementById('tournament-modal');
+const closeModalBtn = document.querySelector('.close');
+const tournamentForm = document.getElementById('tournament-form');
 
-        // Создаем таблицы и вставляем тестовые данные
-        initializeDatabase(db);
-        
-        // Инициализация интерфейса
-        initializeUI(db);
-
-    } catch (error) {
-        console.error('Error initializing database:', error);
-        showError('Ошибка инициализации базы данных');
-    }
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', function() {
+    // Загрузка данных из localStorage
+    loadData();
+    
+    // Настройка обработчиков событий
+    setupEventListeners();
+    
+    // Отображение данных
+    renderTournaments();
+    updateTournamentInfo();
 });
 
-function initializeDatabase(db) {
-    // Создаем таблицы
-    const sql = `
-        CREATE TABLE IF NOT EXISTS categories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
-        );
-
-        CREATE TABLE IF NOT EXISTS stages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
-        );
-
-        CREATE TABLE IF NOT EXISTS teams (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
-        );
-
-        CREATE TABLE IF NOT EXISTS tournaments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            category_id INTEGER NOT NULL,
-            stage_id INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (category_id) REFERENCES categories (id),
-            FOREIGN KEY (stage_id) REFERENCES stages (id)
-        );
-
-        CREATE TABLE IF NOT EXISTS matches (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tournament_id INTEGER NOT NULL,
-            match_number TEXT NOT NULL,
-            round_name TEXT NOT NULL,
-            team1_id INTEGER NOT NULL,
-            team2_id INTEGER NOT NULL,
-            team1_score INTEGER DEFAULT 0,
-            team2_score INTEGER DEFAULT 0,
-            winner_id INTEGER,
-            match_order INTEGER,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-
-        -- Вставляем тестовые данные
-        INSERT OR IGNORE INTO categories (name) VALUES 
-        ('Мужчины'), ('Женщины');
-
-        INSERT OR IGNORE INTO stages (name) VALUES 
-        ('Финал'), ('Групповой этап'), ('Плей-офф');
-
-        INSERT OR IGNORE INTO teams (name) VALUES 
-        ('Иванов/Петров'),
-        ('Сидоров/Кузнецов'),
-        ('Смирнов/Попов'),
-        ('Васильев/Морозов'),
-        ('Волков/Алексеев'),
-        ('Новиков/Фёдоров'),
-        ('Егоров/Павлов'),
-        ('Соколов/Орлов'),
-        ('Ковалёва/Новикова'),
-        ('Петрова/Сидорова'),
-        ('Смирнова/Иванова'),
-        ('Кузнецова/Попова');
-
-        INSERT OR IGNORE INTO tournaments (category_id, stage_id, name) 
-        VALUES (1, 3, 'Кубок победителей 2023'),
-               (2, 3, 'Кубок победителей 2023');
-
-        INSERT OR IGNORE INTO matches (tournament_id, match_number, round_name, team1_id, team2_id, team1_score, team2_score, winner_id, match_order) VALUES
-        -- Мужчины
-        (1, 'М1', '1/8 финала', 1, 2, 21, 18, 1, 1),
-        (1, 'М2', '1/8 финала', 3, 4, 19, 21, 4, 2),
-        (1, 'М3', '1/4 финала', 1, 4, 21, 19, 1, 3),
-        (1, 'М4', '1/4 финала', 5, 6, 17, 21, 6, 4),
-        (1, 'М5', '1/2 финала', 1, 6, 21, 15, 1, 5),
-        (1, 'М6', '1/2 финала', 7, 8, 21, 23, 8, 6),
-        (1, 'М7', 'Финал', 1, 8, 21, 18, 1, 7),
+// Настройка обработчиков событий
+function setupEventListeners() {
+    // Навигация
+    document.getElementById('clear-bracket-btn').addEventListener('click', clearBracket);
+    document.querySelectorAll('.main-nav a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionId = this.getAttribute('data-section');
+            showSection(sectionId);
+            
+            // Обновление активной ссылки в навигации
+            document.querySelectorAll('.main-nav a').forEach(item => {
+                item.classList.remove('active');
+            });
+            this.classList.add('active');
+        });
+    });
+function clearBracket() {
+    if (confirm('Вы уверены, что хотите очистить турнирную сетку? Все данные будут удалены.')) {
+        bracketData = null;
+        matchSchedule = [];
+        saveData();
         
-        -- Женщины
-        (2, 'Ж1', '1/4 финала', 9, 10, 21, 17, 9, 8),
-        (2, 'Ж2', '1/4 финала', 11, 12, 19, 21, 12, 9),
-        (2, 'Ж3', '1/2 финала', 9, 12, 21, 19, 9, 10),
-        (2, 'Ж4', 'Финал', 9, 11, 21, 16, 9, 11);
-    `;
-
-    db.exec(sql);
-}
-
-function initializeUI(db) {
-    const categorySelect = document.getElementById('category');
-    const stageSelect = document.getElementById('stage');
-    const updateBtn = document.getElementById('update-btn');
-    const bracketContainer = document.getElementById('tournament-bracket');
-
-    // Заполняем выпадающие списки данными из БД
-    populateSelects(db);
-
-    // Загружаем начальные данные
-    loadMatches(db);
-
-    // Обработчик кнопки обновления
-    updateBtn.addEventListener('click', () => loadMatches(db));
-
-    // Обработчики изменений в select
-    categorySelect.addEventListener('change', () => loadMatches(db));
-    stageSelect.addEventListener('change', () => loadMatches(db));
-
-    // Обработчики для навигационного меню
-    setupNavigation();
-}
-
-function populateSelects(db) {
-    const categorySelect = document.getElementById('category');
-    const stageSelect = document.getElementById('stage');
-
-    // Заполняем категории
-    const categories = db.exec("SELECT name FROM categories");
-    if (categories[0]) {
-        categorySelect.innerHTML = '';
-        categories[0].values.forEach(([name]) => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            categorySelect.appendChild(option);
-        });
-    }
-
-    // Заполняем стадии
-    const stages = db.exec("SELECT name FROM stages");
-    if (stages[0]) {
-        stageSelect.innerHTML = '';
-        stages[0].values.forEach(([name]) => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            stageSelect.appendChild(option);
-        });
+        // Перерисовываем интерфейс
+        renderBracket();
+        renderSchedule();
+        
+        alert('Турнирная сетка очищена!');
     }
 }
-
-function loadMatches(db) {
-    const categorySelect = document.getElementById('category');
-    const stageSelect = document.getElementById('stage');
-    const bracketContainer = document.getElementById('tournament-bracket');
-
-    const selectedCategory = categorySelect.value;
-    const selectedStage = stageSelect.value;
-
-    const sql = `
-        SELECT 
-            m.id,
-            m.match_number,
-            m.round_name,
-            t1.name as team1,
-            t2.name as team2,
-            m.team1_score,
-            m.team2_score,
-            tw.name as winner,
-            c.name as category,
-            s.name as stage
-        FROM matches m
-        JOIN teams t1 ON m.team1_id = t1.id
-        JOIN teams t2 ON m.team2_id = t2.id
-        LEFT JOIN teams tw ON m.winner_id = tw.id
-        JOIN tournaments t ON m.tournament_id = t.id
-        JOIN categories c ON t.category_id = c.id
-        JOIN stages s ON t.stage_id = s.id
-        WHERE c.name = ? AND s.name = ?
-        ORDER BY m.match_order
-    `;
-
-    try {
-        const stmt = db.prepare(sql);
-        stmt.bind([selectedCategory, selectedStage]);
-        
-        const matches = [];
-        while (stmt.step()) {
-            matches.push(stmt.getAsObject());
+    // Переключение режима редактирования
+    toggleEditBtn.addEventListener('click', toggleEditMode);
+    
+    // Добавление поля для ввода команды
+    addTeamInputBtn.addEventListener('click', addTeamInputField);
+    
+    // Сохранение команд
+    saveTeamsBtn.addEventListener('click', saveTeams);
+    
+    // Создание турнира
+    createTournamentBtn.addEventListener('click', showTournamentModal);
+    
+    // Закрытие модального окна
+    closeModalBtn.addEventListener('click', closeTournamentModal);
+    
+    // Обработка отправки формы турнира
+    tournamentForm.addEventListener('submit', handleTournamentSubmit);
+    
+    // Генерация турнирной сетки
+    generateBracketBtn.addEventListener('click', generateBracket);
+    
+    // Закрытие модального окна при клике вне его
+    window.addEventListener('click', function(e) {
+        if (e.target === tournamentModal) {
+            closeTournamentModal();
         }
-        stmt.free();
+    });
+}
 
-        displayMatches(matches);
-    } catch (error) {
-        console.error('Error loading matches:', error);
-        showError('Ошибка загрузки матчей');
+// Загрузка данных из localStorage
+function loadData() {
+    const savedTournaments = localStorage.getItem('volleyballTournaments');
+    const savedTeams = localStorage.getItem('volleyballTeams');
+    const savedBracket = localStorage.getItem('volleyballBracket');
+    const savedSchedule = localStorage.getItem('volleyballSchedule');
+    
+    if (savedTournaments) {
+        tournaments = JSON.parse(savedTournaments);
+    }
+    
+    if (savedTeams) {
+        teams = JSON.parse(savedTeams);
+    }
+    
+    if (savedBracket) {
+        bracketData = JSON.parse(savedBracket);
+    }
+    
+    if (savedSchedule) {
+        matchSchedule = JSON.parse(savedSchedule);
+    }
+    
+    // Если есть турниры, устанавливаем первый как текущий
+    if (tournaments.length > 0) {
+        currentTournament = tournaments[0];
     }
 }
 
-function displayMatches(matches) {
-    const bracketContainer = document.getElementById('tournament-bracket');
+// Сохранение данных в localStorage
+function saveData() {
+    localStorage.setItem('volleyballTournaments', JSON.stringify(tournaments));
+    localStorage.setItem('volleyballTeams', JSON.stringify(teams));
+    localStorage.setItem('volleyballBracket', JSON.stringify(bracketData));
+    localStorage.setItem('volleyballSchedule', JSON.stringify(matchSchedule));
+}
+
+// Отображение секции
+function showSection(sectionId) {
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById(sectionId).classList.add('active');
+}
+
+// Переключение режима редактирования
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    
+    if (isEditMode) {
+        toggleEditBtn.textContent = 'Режим просмотра';
+        teamsInputSection.style.display = 'block';
+        renderTeamInputs();
+    } else {
+        toggleEditBtn.textContent = 'Режим редактирования';
+        teamsInputSection.style.display = 'none';
+    }
+    
+    renderBracket();
+}
+
+// Добавление поля для ввода команды
+function addTeamInputField() {
+    const teamInput = document.createElement('div');
+    teamInput.className = 'team-input';
+    teamInput.innerHTML = `
+        <input type="text" placeholder="Название команды" class="team-name-input">
+        <button type="button" class="remove-team-btn"><i class="fas fa-times"></i></button>
+    `;
+    
+    teamInput.querySelector('.remove-team-btn').addEventListener('click', function() {
+        teamInput.remove();
+    });
+    
+    teamsList.appendChild(teamInput);
+}
+
+// Отображение полей для ввода команд
+function renderTeamInputs() {
+    teamsList.innerHTML = '';
+    
+    teams.forEach((team, index) => {
+        const teamInput = document.createElement('div');
+        teamInput.className = 'team-input';
+        teamInput.innerHTML = `
+            <input type="text" placeholder="Название команды" 
+                   class="team-name-input" value="${team.name}" data-index="${index}">
+            <button type="button" class="remove-team-btn"><i class="fas fa-times"></i></button>
+        `;
+        
+        teamInput.querySelector('.remove-team-btn').addEventListener('click', function() {
+            teams.splice(index, 1);
+            saveData();
+            renderTeamInputs();
+        });
+        
+        teamsList.appendChild(teamInput);
+    });
+    
+    // Добавляем одно пустое поле для новой команды
+    addTeamInputField();
+}
+
+// Сохранение команд
+function saveTeams() {
+    const teamInputs = document.querySelectorAll('.team-name-input');
+    const newTeams = [];
+    
+    teamInputs.forEach(input => {
+        const teamName = input.value.trim();
+        if (teamName) {
+            newTeams.push({
+                name: teamName,
+                id: Date.now() + Math.random().toString(16).slice(2)
+            });
+        }
+    });
+    
+    teams = newTeams;
+    saveData();
+    alert('Команды сохранены!');
+    
+    // Обновляем счетчик участников
+    updateTournamentInfo();
+}
+
+// Обновление информации о турнире
+function updateTournamentInfo() {
+    participantsCount.textContent = teams.length;
+    seededCount.textContent = Math.min(4, teams.length); // Пример: 4 сеянных команды
+    
+    if (currentTournament) {
+        tournamentDate.textContent = formatDate(currentTournament.date);
+    }
+}
+
+// Форматирование даты
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU');
+}
+
+// Показ модального окна создания турнира
+function showTournamentModal() {
+    tournamentModal.style.display = 'block';
+}
+
+// Закрытие модального окна
+function closeTournamentModal() {
+    tournamentModal.style.display = 'none';
+    tournamentForm.reset();
+}
+
+// Обработка отправки формы турнира
+function handleTournamentSubmit(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('tournament-name').value;
+    const date = document.getElementById('tournament-date-input').value;
+    const location = document.getElementById('tournament-location').value;
+    
+    const newTournament = {
+        id: Date.now().toString(),
+        name,
+        date,
+        location,
+        createdAt: new Date().toISOString()
+    };
+    
+    tournaments.push(newTournament);
+    currentTournament = newTournament;
+    
+    saveData();
+    renderTournaments();
+    updateTournamentInfo();
+    closeTournamentModal();
+    
+    alert('Турнир создан успешно!');
+}
+
+// Отображение списка турниров
+function renderTournaments() {
+    tournamentsContainer.innerHTML = '';
+    
+    if (tournaments.length === 0) {
+        tournamentsContainer.innerHTML = '<p>Нет созданных турниров</p>';
+        return;
+    }
+    
+    tournaments.forEach(tournament => {
+        const tournamentEl = document.createElement('div');
+        tournamentEl.className = 'tournament-item';
+        if (currentTournament && tournament.id === currentTournament.id) {
+            tournamentEl.classList.add('active');
+        }
+        
+        tournamentEl.innerHTML = `
+            <h3>${tournament.name}</h3>
+            <p>Дата: ${formatDate(tournament.date)}</p>
+            <p>Место: ${tournament.location}</p>
+            <button class="select-tournament-btn">Выбрать</button>
+        `;
+        
+        tournamentEl.querySelector('.select-tournament-btn').addEventListener('click', () => {
+            currentTournament = tournament;
+            renderTournaments();
+            updateTournamentInfo();
+            
+            // Если есть данные сетки, отображаем их
+            if (bracketData) {
+                renderBracket();
+                renderSchedule();
+            }
+        });
+        
+        tournamentsContainer.appendChild(tournamentEl);
+    });
+}
+
+// Генерация турнирной сетки
+function generateBracket() {
+    if (teams.length < 2) {
+        alert('Для генерации сетки нужно минимум 2 команды!');
+        return;
+    }
+    
+    // Очищаем предыдущие данные
+    bracketData = null;
+    matchSchedule = [];
+    
+    // Создаем начальную сетку
+    const bracket = createInitialBracket(teams);
+    bracketData = bracket;
+    
+    // Генерируем расписание матчей
+    generateSchedule(bracket);
+    
+    saveData();
+    
+    // Переключаемся на раздел турнирной сетки
+    showSection('tournament-bracket-section');
+    document.querySelector('[data-section="tournament-bracket-section"]').classList.add('active');
+    document.querySelector('[data-section="tournaments-list"]').classList.remove('active');
+    
+    // Отображаем сетку и расписание
+    renderBracket();
+    renderSchedule();
+}
+
+// Создание начальной турнирной сетки
+function createInitialBracket(teams) {
+    const teamCount = teams.length;
+    
+    // Определяем количество раундов
+    const rounds = Math.ceil(Math.log2(teamCount));
+    const bracketSize = Math.pow(2, rounds);
+    
+    // Создаем структуру сетки
+    const bracket = {
+        rounds: [],
+        thirdPlaceMatch: null // Матч за 3-е место
+    };
+    
+    // Заполняем сетку раундами
+    for (let i = 0; i < rounds; i++) {
+        const matchCount = Math.pow(2, rounds - i - 1);
+        const round = {
+            name: getRoundName(i, rounds),
+            matches: []
+        };
+        
+        for (let j = 0; j < matchCount; j++) {
+            round.matches.push({
+                id: `round-${i}-match-${j}`,
+                team1: null,
+                team2: null,
+                winner: null,
+                loser: null, // Для матча за 3-е место
+                score: null,
+                completed: false
+            });
+        }
+        
+        bracket.rounds.push(round);
+    }
+    
+    // Добавляем матч за 3-е место
+    bracket.thirdPlaceMatch = {
+        id: 'third-place-match',
+        team1: null,
+        team2: null,
+        winner: null,
+        score: null,
+        completed: false
+    };
+    
+    // Заполняем первый раунд командами
+    const firstRound = bracket.rounds[0];
+    const shuffledTeams = [...teams].sort(() => Math.random() - 0.5); // Перемешиваем команды
+    
+    for (let i = 0; i < firstRound.matches.length; i++) {
+        const match = firstRound.matches[i];
+        
+        if (i * 2 < shuffledTeams.length) {
+            match.team1 = shuffledTeams[i * 2];
+        }
+        
+        if (i * 2 + 1 < shuffledTeams.length) {
+            match.team2 = shuffledTeams[i * 2 + 1];
+        }
+        
+        // Если команда только одна в матче (нечетное количество), она проходит автоматически
+        if (match.team1 && !match.team2) {
+            match.winner = match.team1;
+            match.completed = true;
+        } else if (!match.team1 && match.team2) {
+            match.winner = match.team2;
+            match.completed = true;
+        }
+    }
+    
+    // Немедленно обновляем следующие раунды для автоматически прошедших команд
+    firstRound.matches.forEach(match => {
+        if (match.completed && match.winner) {
+            updateNextMatches(match, match.winner, null);
+        }
+    });
+    
+    return bracket;
+}
+
+
+// Получение названия раунда
+function getRoundName(roundIndex, totalRounds) {
+    const roundNames = [
+        'Финал',
+        'Полуфинал', 
+        'Четвертьфинал',
+        '1/8 финала',
+        '1/16 финала'
+    ];
+    
+    const difference = totalRounds - roundIndex - 1;
+    
+    if (difference < roundNames.length) {
+        return roundNames[difference];
+    }
+    
+    return `Раунд ${roundIndex + 1}`;
+}
+
+
+// Генерация расписания матчей
+function generateSchedule(bracket) {
+    matchSchedule = [];
+    
+    // Генерируем даты и время для матчей
+    const startDate = currentTournament ? new Date(currentTournament.date) : new Date();
+    let matchDateTime = new Date(startDate);
+    matchDateTime.setHours(10, 0, 0, 0);
+    
+    // Проходим по всем раундам и матчам
+    bracket.rounds.forEach((round, roundIndex) => {
+        round.matches.forEach(match => {
+            // Для первого раунда пропускаем матчи с "пустышкой"
+            if (roundIndex === 0 && match.isBye) {
+                return;
+            }
+            
+            // Для последующих раундов пропускаем матчи, где нет двух команд
+            if (roundIndex > 0 && (!match.team1 || !match.team2)) {
+                return;
+            }
+            
+            // Пропускаем завершенные матчи
+            if (match.completed) {
+                return;
+            }
+            
+            // Добавляем матч в расписание
+            matchSchedule.push({
+                round: round.name,
+                team1: match.team1 ? match.team1.name : ' ',
+                team2: match.team2 ? match.team2.name : ' ',
+                date: matchDateTime.toLocaleDateString('ru-RU'),
+                time: matchDateTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                court: `Площадка ${Math.floor(Math.random() * 3) + 1}`,
+                matchId: match.id
+            });
+            
+            // Добавляем 30 минут между матчами
+            matchDateTime.setMinutes(matchDateTime.getMinutes() + 30);
+        });
+        
+        // Добавляем перерыв между раундами (2 часа)
+        matchDateTime.setHours(matchDateTime.getHours() + 2);
+    });
+}
+
+// Отображение турнирной сетки
+function renderBracket() {
+    if (!bracketData) {
+        bracketContainer.innerHTML = '<p>Турнирная сетка не сгенерирована</p>';
+        return;
+    }
+    
     bracketContainer.innerHTML = '';
     
-    if (matches.length === 0) {
-        bracketContainer.innerHTML = '<p class="no-matches">Матчи не найдены для выбранных фильтров</p>';
-        return;
-    }
-
-    const matchesByRound = groupMatchesByRound(matches);
+    // Создаем контейнер для сетки
+    const bracketEl = document.createElement('div');
+    bracketEl.className = 'bracket';
     
-    // Создаем сетку для каждого раунда
-    Object.keys(matchesByRound).forEach(roundName => {
-        createRoundBracket(roundName, matchesByRound[roundName]);
+    // Добавляем раунды
+    bracketData.rounds.forEach(round => {
+        const roundEl = document.createElement('div');
+        roundEl.className = 'round';
+        
+        const roundTitle = document.createElement('h3');
+        roundTitle.textContent = round.name;
+        roundEl.appendChild(roundTitle);
+        
+        const matchesEl = document.createElement('div');
+        matchesEl.className = 'matches';
+        
+        round.matches.forEach(match => {
+            const matchEl = createMatchElement(match, round);
+            matchesEl.appendChild(matchEl);
+        });
+        
+        roundEl.appendChild(matchesEl);
+        bracketEl.appendChild(roundEl);
     });
+    
+    bracketContainer.appendChild(bracketEl);
 }
-
-function groupMatchesByRound(matches) {
-    return matches.reduce((groups, match) => {
-        const round = match.round_name;
-        if (!groups[round]) {
-            groups[round] = [];
+// Создание элемента матча
+function createMatchElement(match, round) {
+    const matchEl = document.createElement('div');
+    matchEl.className = 'match';
+    matchEl.dataset.matchId = match.id;
+    
+    let team1Name = match.team1 ? match.team1.name : 'TBD';
+    let team2Name = match.team2 ? match.team2.name : 'TBD';
+    let scoreDisplay = '';
+    
+    if (match.completed && match.score) {
+        scoreDisplay = `<div class="match-score">${match.score}</div>`;
+        if (match.winner && match.team1 && match.winner.id === match.team1.id) {
+            team1Name = `${team1Name} ✓`;
+        } else if (match.winner && match.team2 && match.winner.id === match.team2.id) {
+            team2Name = `${team2Name} ✓`;
         }
-        groups[round].push(match);
-        return groups;
-    }, {});
-}
-
-function createRoundBracket(roundName, matches) {
-    const roundSection = document.createElement('div');
-    roundSection.className = 'round-section';
+    }
     
-    const roundTitle = document.createElement('h3');
-    roundTitle.className = 'round-title';
-    roundTitle.textContent = roundName;
-    roundSection.appendChild(roundTitle);
-    
-    const matchesContainer = document.createElement('div');
-    matchesContainer.className = 'matches-container';
-    
-    matches.forEach(match => {
-        const matchElement = createMatchElement(match);
-        matchesContainer.appendChild(matchElement);
-    });
-    
-    roundSection.appendChild(matchesContainer);
-    document.getElementById('tournament-bracket').appendChild(roundSection);
-}
-
-function createMatchElement(match) {
-    const matchDiv = document.createElement('div');
-    matchDiv.className = 'match';
-    matchDiv.dataset.id = match.id;
-    
-    const matchHeader = document.createElement('div');
-    matchHeader.className = 'match-header';
-    matchHeader.innerHTML = `
-        <span class="match-number">${match.match_number}</span>
-        <span class="match-category">${match.category}</span>
-    `;
-    
-    const teamsDiv = document.createElement('div');
-    teamsDiv.className = 'teams';
-    
-    const team1 = createTeamElement(match.team1, match.team1_score, match.winner === match.team1);
-    const team2 = createTeamElement(match.team2, match.team2_score, match.winner === match.team2);
-    
-    teamsDiv.appendChild(team1);
-    teamsDiv.appendChild(team2);
-    
-    const matchFooter = document.createElement('div');
-    matchFooter.className = 'match-footer';
-    matchFooter.innerHTML = `
-        <span class="match-stage">${match.stage}</span>
-        ${match.winner ? `<span class="match-winner">Победитель: ${match.winner}</span>` : ''}
-    `;
-    
-    matchDiv.appendChild(matchHeader);
-    matchDiv.appendChild(teamsDiv);
-    matchDiv.appendChild(matchFooter);
-    
-    return matchDiv;
-}
-
-function createTeamElement(teamName, score, isWinner) {
-    const teamDiv = document.createElement('div');
-    teamDiv.className = `team ${isWinner ? 'winner' : ''}`;
-    
-    teamDiv.innerHTML = `
-        <span class="team-name">${teamName}</span>
-        <span class="team-score">${score !== null && score !== undefined ? score : '-'}</span>
-    `;
-    
-    return teamDiv;
-}
-
-function showError(message) {
-    const bracketContainer = document.getElementById('tournament-bracket');
-    bracketContainer.innerHTML = `
-        <div class="error-message">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p>${message}</p>
-            <button onclick="location.reload()">Попробовать снова</button>
+    matchEl.innerHTML = `
+        <div class="match-team team1 ${match.winner && match.team1 && match.winner.id === match.team1.id ? 'winner' : ''}">
+            ${team1Name}
         </div>
+        <div class="match-team team2 ${match.winner && match.team2 && match.winner.id === match.team2.id ? 'winner' : ''}">
+            ${team2Name}
+        </div>
+        ${scoreDisplay}
+        ${isEditMode && !match.completed && match.team1 && match.team2 ? 
+            `<div class="match-actions">
+                <input type="text" placeholder="Счет (например: 2:1)" class="score-input">
+                <button class="select-winner-btn" data-winner="team1">${match.team1.name}</button>
+                <button class="select-winner-btn" data-winner="team2">${match.team2.name}</button>
+            </div>` : ''
+        }
     `;
-}
-
-function setupNavigation() {
-    const navItems = document.querySelectorAll('#nav-menu li');
     
-    navItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            if (this.querySelector('.dropdown')) {
-                e.preventDefault();
-                const dropdown = this.querySelector('.dropdown');
-                dropdown.classList.toggle('show');
-            }
-        });
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#nav-menu li')) {
-            document.querySelectorAll('.dropdown').forEach(dropdown => {
-                dropdown.classList.remove('show');
-            });
-        }
-    });
-}
-
-// Загрузка данных турнира из базы данных
-function loadTournamentData() {
-    if (!database) {
-        console.error('Database not initialized');
-        return;
-    }
-
-    try {
-        // Получаем данные из localStorage
-        const data = database.getData();
-        if (!data) {
-            console.error('No data found in database');
-            return;
-        }
-
-        // Обновляем информацию о турнире
-        if (data.tournaments.length > 0) {
-            const tournament = data.tournaments[0];
-            tournamentData.name = tournament.name;
-            tournamentData.date = tournament.date;
-            tournamentData.location = tournament.location;
-        }
-
-        // Создаем карту команд
-        const teams = {};
-        data.teams.forEach(team => {
-            teams[team.id] = team.name;
-        });
-
-        // Группируем матчи по раундам
-        tournamentData.matches = {};
-        data.matches.forEach(match => {
-            if (!tournamentData.matches[match.round_name]) {
-                tournamentData.matches[match.round_name] = [];
-            }
-            
-            const winner = match.winner_id ? (match.winner_id === match.team1_id ? 'team1' : 'team2') : null;
-            
-            tournamentData.matches[match.round_name].push({
-                team1: teams[match.team1_id] || 'TBD',
-                team2: teams[match.team2_id] || 'TBD',
-                score1: match.team1_score,
-                score2: match.team2_score,
-                winner: winner
+    // Добавляем обработчики для кнопок выбора победителя
+    if (isEditMode && !match.completed && match.team1 && match.team2) {
+        matchEl.querySelectorAll('.select-winner-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const winnerTeam = this.dataset.winner === 'team1' ? match.team1 : match.team2;
+                const scoreInput = matchEl.querySelector('.score-input');
+                const score = scoreInput ? scoreInput.value : null;
+                setMatchWinner(match, winnerTeam, score);
             });
         });
+    }
+    
+    return matchEl;
+}
 
-        console.log('Tournament data loaded:', tournamentData);
-    } catch (error) {
-        console.error('Error loading tournament data:', error);
+// Установка победителя матча
+function setMatchWinner(match, winner, score) {
+    const loser = match.team1 && match.team1.id === winner.id ? match.team2 : match.team1;
+    
+    match.winner = winner;
+    match.loser = loser;
+    match.score = score;
+    match.completed = true;
+    
+    // Обновляем следующие матчи в сетке
+    updateNextMatches(match, winner, loser);
+    
+    saveData();
+    renderBracket();
+    renderSchedule();
+}
+
+// Обновление следующих матчей в сетке
+function updateNextMatches(currentMatch, winner, loser) {
+    if (!bracketData) return;
+    
+    const matchId = currentMatch.id;
+    const [_, roundIndex, __, matchIndex] = matchId.split('-');
+    const currentRoundIndex = parseInt(roundIndex);
+    const currentMatchIndex = parseInt(matchIndex);
+    
+    // Сохраняем проигравшего для матча за 3-е место
+    if (loser && currentRoundIndex === bracketData.rounds.length - 2) { // Полуфинал
+        if (!bracketData.thirdPlaceMatch.team1) {
+            bracketData.thirdPlaceMatch.team1 = loser;
+        } else if (!bracketData.thirdPlaceMatch.team2) {
+            bracketData.thirdPlaceMatch.team2 = loser;
+        }
+    }
+    
+    // Если это не последний раунд
+    if (currentRoundIndex < bracketData.rounds.length - 1) {
+        const nextRound = bracketData.rounds[currentRoundIndex + 1];
+        const nextMatchIndex = Math.floor(currentMatchIndex / 2);
+        
+        if (nextMatchIndex < nextRound.matches.length) {
+            const nextMatch = nextRound.matches[nextMatchIndex];
+            
+            // Определяем, в какую позицию (team1 или team2) нужно поставить победителя
+            if (currentMatchIndex % 2 === 0) {
+                nextMatch.team1 = winner;
+            } else {
+                nextMatch.team2 = winner;
+            }
+        }
     }
 }
 
-// Глобальные функции для работы с матчами
-window.addMatch = function(matchData) {
-    if (!database) {
-        console.error('Database not initialized');
+
+// Отображение расписания матчей
+function renderSchedule() {
+    scheduleBody.innerHTML = '';
+    
+    if (matchSchedule.length === 0) {
+        scheduleBody.innerHTML = '<tr><td colspan="6">Расписание матчей не сгенерировано</td></tr>';
         return;
     }
     
-    database.addMatch(matchData, (err, result) => {
-        if (err) {
-            console.error('Error adding match:', err);
-        } else {
-            console.log('Match added successfully:', result);
-            loadTournamentData(); // Перезагружаем данные
-            if (typeof renderTournamentBracket === 'function') {
-                renderTournamentBracket(); // Перерисовываем сетку
+    matchSchedule.forEach(match => {
+        const row = document.createElement('tr');
+        
+        // Находим соответствующий матч в сетке
+        const bracketMatch = findMatchInBracket(match.matchId);
+        
+        // Если матч завершен, добавляем специальное оформление
+        const isCompleted = bracketMatch && bracketMatch.completed;
+        
+        row.innerHTML = `
+            <td>${match.round}</td>
+            <td class="${isCompleted && bracketMatch.winner && bracketMatch.team1 && bracketMatch.winner.id === bracketMatch.team1.id ? 'winner' : ''}">${match.team1}</td>
+            <td class="${isCompleted && bracketMatch.winner && bracketMatch.team2 && bracketMatch.winner.id === bracketMatch.team2.id ? 'winner' : ''}">${match.team2}</td>
+            <td>${match.date}</td>
+            <td>${match.time}</td>
+            <td>${match.court}</td>
+        `;
+        
+        scheduleBody.appendChild(row);
+    });
+}
+
+// Поиск матча в сетке по ID
+function findMatchInBracket(matchId) {
+    if (!bracketData) return null;
+    
+    for (const round of bracketData.rounds) {
+        for (const match of round.matches) {
+            if (match.id === matchId) {
+                return match;
             }
         }
-    });
-};
-
-window.editMatch = function(matchId, matchData) {
-    if (!database) {
-        console.error('Database not initialized');
-        return;
     }
     
-    database.updateMatch(matchId, matchData, (err, result) => {
-        if (err) {
-            console.error('Error updating match:', err);
-        } else {
-            console.log('Match updated successfully:', result);
-            loadTournamentData(); // Перезагружаем данные
-            if (typeof renderTournamentBracket === 'function') {
-                renderTournamentBracket(); // Перерисовываем сетку
-            }
-        }
-    });
-};
-
-window.deleteMatch = function(matchId) {
-    if (!database) {
-        console.error('Database not initialized');
-        return;
-    }
-    
-    database.deleteMatch(matchId, (err, result) => {
-        if (err) {
-            console.error('Error deleting match:', err);
-        } else {
-            console.log('Match deleted successfully:', result);
-            loadTournamentData(); // Перезагружаем данные
-            if (typeof renderTournamentBracket === 'function') {
-                renderTournamentBracket(); // Перерисовываем сетку
-            }
-        }
-    });
-};
-
-// Функция для получения данных турнира (для совместимости)
-window.getTournamentData = function() {
-    return tournamentData;
-};
-
-// Функция для обновления данных турнира
-window.updateTournamentData = function() {
-    loadTournamentData();
-};
-
-// Функция для получения команд
-window.getTeams = function() {
-    if (!database) {
-        console.error('Database not initialized');
-        return [];
-    }
-    return database.getTeams();
-};
-
-// Функция для получения матчей
-window.getMatches = function() {
-    if (!database) {
-        console.error('Database not initialized');
-        return [];
-    }
-    return database.getMatches();
-};
-
-// Функция настройки обработчиков событий
-function setupEventHandlers() {
-    // Обработчик для кнопки обновления
-    const updateBtn = document.getElementById('update-btn');
-    if (updateBtn) {
-        updateBtn.addEventListener('click', function() {
-            loadTournamentData();
-            if (typeof renderTournamentBracket === 'function') {
-                renderTournamentBracket();
-            }
-        });
-    }
+    return null;
 }
