@@ -80,43 +80,127 @@ function setupEventListeners() {
             closeTournamentModal();
         }
     });
+    
+    // Add quick fill button event listener
+    const quickFillBtn = document.getElementById('quick-fill-btn');
+    if (quickFillBtn) {
+        quickFillBtn.addEventListener('click', quickFillForm);
+    }
+    
+    // Add test save button event listener
+    const testSaveBtn = document.getElementById('test-save-btn');
+    if (testSaveBtn) {
+        testSaveBtn.addEventListener('click', testDataSaving);
+    }
+    
+    // Add reset data button event listener
+    const resetDataBtn = document.getElementById('reset-data-btn');
+    if (resetDataBtn) {
+        resetDataBtn.addEventListener('click', resetAllData);
+    }
 }
 
 
 function loadData() {
+    console.log('Loading data from localStorage...');
+    
     const savedTournaments = localStorage.getItem('volleyballTournaments');
     const savedTeams = localStorage.getItem('volleyballTeams');
     const savedBracket = localStorage.getItem('volleyballBracket');
     const savedSchedule = localStorage.getItem('volleyballSchedule');
     
+    console.log('Raw data from localStorage:', {
+        tournaments: savedTournaments,
+        teams: savedTeams,
+        bracket: savedBracket,
+        schedule: savedSchedule
+    });
+    
     if (savedTournaments) {
-        tournaments = JSON.parse(savedTournaments);
+        try {
+            tournaments = JSON.parse(savedTournaments);
+            console.log('Tournaments loaded:', tournaments);
+        } catch (error) {
+            console.error('Error parsing tournaments:', error);
+            tournaments = [];
+        }
+    } else {
+        console.log('No tournaments found in localStorage');
     }
     
     if (savedTeams) {
-        teams = JSON.parse(savedTeams);
+        try {
+            teams = JSON.parse(savedTeams);
+            console.log('Teams loaded:', teams);
+        } catch (error) {
+            console.error('Error parsing teams:', error);
+            teams = [];
+        }
+    } else {
+        console.log('No teams found in localStorage');
     }
     
     if (savedBracket) {
-        bracketData = JSON.parse(savedBracket);
+        try {
+            bracketData = JSON.parse(savedBracket);
+            console.log('Bracket data loaded:', bracketData);
+        } catch (error) {
+            console.error('Error parsing bracket data:', error);
+            bracketData = null;
+        }
+    } else {
+        console.log('No bracket data found in localStorage');
     }
     
     if (savedSchedule) {
-        matchSchedule = JSON.parse(savedSchedule);
+        try {
+            matchSchedule = JSON.parse(savedSchedule);
+            console.log('Schedule loaded:', matchSchedule);
+        } catch (error) {
+            console.error('Error parsing schedule:', error);
+            matchSchedule = [];
+        }
+    } else {
+        console.log('No schedule found in localStorage');
     }
     
+    console.log('Final loaded data:', {
+        tournaments: tournaments.length,
+        teams: teams.length,
+        bracketData: !!bracketData,
+        matchSchedule: matchSchedule.length
+    });
 
     if (tournaments.length > 0) {
         currentTournament = tournaments[0];
+        console.log('Current tournament set to:', currentTournament);
     }
 }
 
 
 function saveData() {
-    localStorage.setItem('volleyballTournaments', JSON.stringify(tournaments));
-    localStorage.setItem('volleyballTeams', JSON.stringify(teams));
-    localStorage.setItem('volleyballBracket', JSON.stringify(bracketData));
-    localStorage.setItem('volleyballSchedule', JSON.stringify(matchSchedule));
+    console.log('Saving data to localStorage...');
+    console.log('Tournaments to save:', tournaments);
+    console.log('Teams to save:', teams);
+    console.log('Bracket data to save:', bracketData);
+    console.log('Schedule to save:', matchSchedule);
+    
+    try {
+        localStorage.setItem('volleyballTournaments', JSON.stringify(tournaments));
+        localStorage.setItem('volleyballTeams', JSON.stringify(teams));
+        localStorage.setItem('volleyballBracket', JSON.stringify(bracketData));
+        localStorage.setItem('volleyballSchedule', JSON.stringify(matchSchedule));
+        
+        console.log('Data saved successfully to localStorage');
+        
+        // Verify data was saved
+        const savedTournaments = localStorage.getItem('volleyballTournaments');
+        console.log('Verification - saved tournaments:', savedTournaments);
+        
+    } catch (error) {
+        console.error('Error saving data to localStorage:', error);
+        alert('Ошибка при сохранении данных: ' + error.message);
+    }
 }
 
 
@@ -226,6 +310,21 @@ function formatDate(dateString) {
 
 
 function showTournamentModal() {
+    document.getElementById('tournament-modal-title').textContent = 'Создать турнир';
+    document.getElementById('tournament-form').dataset.id = '';
+    document.getElementById('tournament-form').reset();
+    
+    // Set default values
+    document.getElementById('tournament-time').value = '10:00';
+    document.getElementById('tournament-city').value = 'Москва';
+    
+    // Set default radio button selections
+    document.querySelector('input[name="tournament-format"][value="double-elimination"]').checked = true;
+    document.querySelector('input[name="game-type"][value="beach-2x2"]').checked = true;
+    document.querySelector('input[name="gender-mix"][value="men"]').checked = true;
+    document.querySelector('input[name="restrictions"][value="no-restrictions"]').checked = true;
+    document.querySelector('input[name="application-collection"][value="yes"]').checked = true;
+    
     tournamentModal.style.display = 'block';
 }
 
@@ -235,43 +334,187 @@ function closeTournamentModal() {
     tournamentForm.reset();
 }
 
+// Quick fill function for testing
+function quickFillForm() {
+    document.getElementById('tournament-name').value = 'Тестовый турнир';
+    document.getElementById('tournament-date-input').value = '2025-08-22';
+    document.getElementById('tournament-time').value = '10:00';
+    document.getElementById('tournament-location').value = 'Спортивный комплекс';
+    document.getElementById('tournament-city').value = 'Москва';
+    document.getElementById('organizer-number').value = 'ORG001';
+    document.getElementById('organizer-password').value = 'test123';
+    document.getElementById('tournament-regulations').value = 'Дата и время окончания регистрации - 20.08.2025\nМесто проведения - Спортивный комплекс\nТип турнира (муж, жен, микс) - Мужской\nОграничения по участникам (возраст, территория..) - Без ограничений\nВзнос - Бесплатно\nОрганизатор - Тестовая организация\nКонтакты организатора - +7(999)123-45-67';
+    
+    // Set radio button values
+    document.querySelector('input[name="tournament-format"][value="double-elimination"]').checked = true;
+    document.querySelector('input[name="game-type"][value="beach-2x2"]').checked = true;
+    document.querySelector('input[name="gender-mix"][value="men"]').checked = true;
+    document.querySelector('input[name="restrictions"][value="no-restrictions"]').checked = true;
+    document.querySelector('input[name="application-collection"][value="yes"]').checked = true;
+}
+
 
 function handleTournamentSubmit(e) {
     e.preventDefault();
     
+    console.log('Form submitted, processing tournament data...');
+    
     const name = document.getElementById('tournament-name').value;
     const date = document.getElementById('tournament-date-input').value;
+    const time = document.getElementById('tournament-time').value;
     const location = document.getElementById('tournament-location').value;
+    const city = document.getElementById('tournament-city').value;
     
-    const newTournament = {
-        id: Date.now().toString(),
-        name,
-        date,
-        location,
-        createdAt: new Date().toISOString()
-    };
+    // Get radio button values
+    const format = document.querySelector('input[name="tournament-format"]:checked')?.value;
+    const gameType = document.querySelector('input[name="game-type"]:checked')?.value;
+    const genderMix = document.querySelector('input[name="gender-mix"]:checked')?.value;
+    const restrictions = document.querySelector('input[name="restrictions"]:checked')?.value;
+    const applicationCollection = document.querySelector('input[name="application-collection"]:checked')?.value;
     
-    tournaments.push(newTournament);
-    currentTournament = newTournament;
+    // Get additional fields
+    const organizerNumber = document.getElementById('organizer-number').value;
+    const organizerPassword = document.getElementById('organizer-password').value;
+    const regulations = document.getElementById('tournament-regulations').value;
     
+    console.log('Tournament data collected:', {
+        name, date, time, location, city, format, gameType, genderMix, restrictions, applicationCollection
+    });
+    
+    const tournamentId = document.getElementById('tournament-form').dataset.id;
+    
+    if (tournamentId) {
+        // Update existing tournament
+        console.log('Updating existing tournament with ID:', tournamentId);
+        tournaments = tournaments.map(t => t.id === tournamentId ? {
+            ...t,
+            name,
+            date,
+            time,
+            location,
+            city,
+            format,
+            gameType,
+            genderMix,
+            restrictions,
+            applicationCollection,
+            organizerNumber,
+            organizerPassword,
+            regulations,
+            updatedAt: new Date().toISOString()
+        } : t);
+        alert('Турнир обновлен успешно!');
+    } else {
+        // Create new tournament
+        console.log('Creating new tournament...');
+        const newTournament = {
+            id: Date.now().toString(),
+            name,
+            date,
+            time,
+            location,
+            city,
+            format,
+            gameType,
+            genderMix,
+            restrictions,
+            applicationCollection,
+            organizerNumber,
+            organizerPassword,
+            regulations,
+            createdAt: new Date().toISOString()
+        };
+        
+        console.log('New tournament object:', newTournament);
+        tournaments.push(newTournament);
+        currentTournament = newTournament;
+        console.log('Tournament added to array. Total tournaments:', tournaments.length);
+        alert('Турнир создан успешно!');
+    }
+    
+    console.log('Saving data to localStorage...');
     saveData();
+    console.log('Data saved. Rendering tournaments...');
     renderTournaments();
     updateTournamentInfo();
     closeTournamentModal();
     
-    alert('Турнир создан успешно!');
+    console.log('Tournament creation/update completed successfully!');
 }
 
 
+function getFormatDisplayName(format) {
+    const formatNames = {
+        'single-elimination': 'На выбывание',
+        'double-elimination': 'Двойное выбывание',
+        'groups': 'Группы',
+        'pseudo-groups': 'Псевдогруппа',
+        'sand-master': 'Мастер песка',
+        'master-mix': 'Мастер-микст',
+        'royal-mix': 'Королевский микст',
+        'kings-court': 'Kings of the court',
+        'kings-beach': 'Kings of the beach+',
+        'dynamic': 'Динамический',
+        'leagues': 'Деление на лиги'
+    };
+    return formatNames[format] || format;
+}
+
+function getGameTypeDisplayName(gameType) {
+    const gameTypeNames = {
+        'beach-2x2': 'Пляжный 2×2',
+        'snow-3x3': 'Снежный 3×3',
+        'park-4x4': 'Парковый 4×4',
+        'classic-6x6': 'Классика 6×6',
+        'other': 'Другой'
+    };
+    return gameTypeNames[gameType] || gameType;
+}
+
+function getGenderMixDisplayName(genderMix) {
+    const genderMixNames = {
+        'men': 'Мужской',
+        'women': 'Женский',
+        'mix': 'Микст'
+    };
+    return genderMixNames[genderMix] || genderMix;
+}
+
+function getRestrictionsDisplayName(restrictions) {
+    const restrictionsNames = {
+        'youth': 'Молодежный',
+        'veterans': 'Ветераны',
+        'no-restrictions': 'Без ограничений'
+    };
+    return restrictionsNames[restrictions] || restrictions;
+}
+
 function renderTournaments() {
+    console.log('Rendering tournaments...');
+    console.log('Tournaments array:', tournaments);
+    console.log('Tournaments container:', tournamentsContainer);
+    
     tournamentsContainer.innerHTML = '';
     
     if (tournaments.length === 0) {
-        tournamentsContainer.innerHTML = '<p>Нет созданных турниров</p>';
+        console.log('No tournaments to render, showing empty message');
+        tournamentsContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-trophy" style="font-size: 3rem; color: #cbd5e0; margin-bottom: 1rem;"></i>
+                <p>Нет созданных турниров</p>
+                <p style="font-size: 0.9rem; color: #a0aec0; margin-top: 0.5rem;">
+                    Создайте первый турнир, нажав кнопку "Создать турнир"
+                </p>
+            </div>
+        `;
         return;
     }
     
-    tournaments.forEach(tournament => {
+    console.log(`Rendering ${tournaments.length} tournaments...`);
+    
+    tournaments.forEach((tournament, index) => {
+        console.log(`Rendering tournament ${index + 1}:`, tournament);
+        
         const tournamentEl = document.createElement('div');
         tournamentEl.className = 'tournament-item';
         if (currentTournament && tournament.id === currentTournament.id) {
@@ -280,25 +523,124 @@ function renderTournaments() {
         
         tournamentEl.innerHTML = `
             <h3>${tournament.name}</h3>
-            <p>Дата: ${formatDate(tournament.date)}</p>
-            <p>Место: ${tournament.location}</p>
-            <button class="select-tournament-btn">Выбрать</button>
+            <div class="tournament-details">
+                <p><i class="fas fa-calendar-alt"></i> ${formatDate(tournament.date)} ${tournament.time ? `в ${tournament.time}` : ''}</p>
+                <p><i class="fas fa-map-marker-alt"></i> ${tournament.location}${tournament.city ? `, ${tournament.city}` : ''}</p>
+                ${tournament.format ? `<p><i class="fas fa-trophy"></i> ${getFormatDisplayName(tournament.format)}</p>` : ''}
+                ${tournament.gameType ? `<p><i class="fas fa-volleyball-ball"></i> ${getGameTypeDisplayName(tournament.gameType)}</p>` : ''}
+                ${tournament.genderMix ? `<p><i class="fas fa-users"></i> ${getGenderMixDisplayName(tournament.genderMix)}</p>` : ''}
+                ${tournament.restrictions && tournament.restrictions !== 'no-restrictions' ? `<p><i class="fas fa-info-circle"></i> ${getRestrictionsDisplayName(tournament.restrictions)}</p>` : ''}
+            </div>
+            <div class="tournament-actions">
+                <button class="btn edit-tournament-btn" data-id="${tournament.id}" title="Редактировать турнир">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn delete-tournament-btn" data-id="${tournament.id}" title="Удалить турнир">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn view-bracket-btn" data-id="${tournament.id}" title="Просмотреть сетку">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
         `;
         
-        tournamentEl.querySelector('.select-tournament-btn').addEventListener('click', () => {
-            currentTournament = tournament;
-            renderTournaments();
-            updateTournamentInfo();
-            
-        
-            if (bracketData) {
-                renderBracket();
-                renderSchedule();
-            }
+        // Add event listeners for the action buttons
+        tournamentEl.querySelector('.edit-tournament-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            editTournament(tournament.id);
+        });
+
+        tournamentEl.querySelector('.delete-tournament-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteTournament(tournament.id);
+        });
+
+        tournamentEl.querySelector('.view-bracket-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            viewTournamentBracket(tournament.id);
         });
         
         tournamentsContainer.appendChild(tournamentEl);
+        console.log(`Tournament ${index + 1} rendered and added to DOM`);
     });
+    
+    console.log('All tournaments rendered successfully');
+}
+
+function editTournament(id) {
+    const tournamentToEdit = tournaments.find(t => t.id === id);
+    if (tournamentToEdit) {
+        // Fill form fields
+        document.getElementById('tournament-name').value = tournamentToEdit.name;
+        document.getElementById('tournament-date-input').value = tournamentToEdit.date;
+        document.getElementById('tournament-time').value = tournamentToEdit.time || '10:00';
+        document.getElementById('tournament-location').value = tournamentToEdit.location;
+        document.getElementById('tournament-city').value = tournamentToEdit.city || 'Москва';
+        document.getElementById('organizer-number').value = tournamentToEdit.organizerNumber || '';
+        document.getElementById('organizer-password').value = tournamentToEdit.organizerPassword || '';
+        document.getElementById('tournament-regulations').value = tournamentToEdit.regulations || '';
+        
+        // Set radio button values
+        if (tournamentToEdit.format) {
+            document.querySelector(`input[name="tournament-format"][value="${tournamentToEdit.format}"]`).checked = true;
+        }
+        if (tournamentToEdit.gameType) {
+            document.querySelector(`input[name="game-type"][value="${tournamentToEdit.gameType}"]`).checked = true;
+        }
+        if (tournamentToEdit.genderMix) {
+            document.querySelector(`input[name="gender-mix"][value="${tournamentToEdit.genderMix}"]`).checked = true;
+        }
+        if (tournamentToEdit.restrictions) {
+            document.querySelector(`input[name="restrictions"][value="${tournamentToEdit.restrictions}"]`).checked = true;
+        }
+        if (tournamentToEdit.applicationCollection) {
+            document.querySelector(`input[name="application-collection"][value="${tournamentToEdit.applicationCollection}"]`).checked = true;
+        }
+        
+        // Update modal title and store ID for update
+        document.getElementById('tournament-modal-title').textContent = 'Редактировать турнир';
+        document.getElementById('tournament-form').dataset.id = id;
+        showTournamentModal();
+    }
+}
+
+function deleteTournament(id) {
+    if (confirm('Вы уверены, что хотите удалить этот турнир?')) {
+        tournaments = tournaments.filter(t => t.id !== id);
+        saveData();
+        renderTournaments();
+        if (currentTournament && currentTournament.id === id) {
+            currentTournament = null;
+            bracketData = null;
+            teams = [];
+            matchSchedule = [];
+            updateTournamentInfo();
+            renderBracket();
+            renderSchedule();
+        }
+        alert('Турнир удален.');
+    }
+}
+
+function viewTournamentBracket(id) {
+    const tournamentToView = tournaments.find(t => t.id === id);
+    if (tournamentToView) {
+        currentTournament = tournamentToView;
+        updateTournamentInfo();
+        showSection('tournament-bracket-section');
+        document.querySelectorAll('.main-nav a').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector('[data-section="tournament-bracket-section"]').classList.add('active');
+        
+        if (bracketData && currentTournament.id === bracketData.tournamentId) {
+            renderBracket();
+            renderSchedule();
+        } else {
+            bracketContainer.innerHTML = '<p>Сетка для этого турнира не сгенерирована. Пожалуйста, сгенерируйте ее.</p>';
+            scheduleBody.innerHTML = '<tr><td colspan="6">Расписание матчей не сгенерировано</td></tr>';
+        }
+    }
 }
 
 
@@ -679,4 +1021,101 @@ function findMatchInBracket(matchId) {
     }
     
     return null;
+}
+
+// Test function for debugging data saving
+function testDataSaving() {
+    console.log('=== TESTING DATA SAVING ===');
+    
+    // Test 1: Check if localStorage is available
+    try {
+        localStorage.setItem('test', 'test-value');
+        const testValue = localStorage.getItem('test');
+        localStorage.removeItem('test');
+        console.log('✅ localStorage is working');
+    } catch (error) {
+        console.error('❌ localStorage is not working:', error);
+        alert('localStorage не работает: ' + error.message);
+        return;
+    }
+    
+    // Test 2: Check current data
+    console.log('Current tournaments array:', tournaments);
+    console.log('Current teams array:', teams);
+    
+    // Test 3: Try to save data
+    console.log('Attempting to save data...');
+    saveData();
+    
+    // Test 4: Verify data was saved
+    const savedTournaments = localStorage.getItem('volleyballTournaments');
+    const savedTeams = localStorage.getItem('volleyballTeams');
+    
+    console.log('Saved tournaments (raw):', savedTournaments);
+    console.log('Saved teams (raw):', savedTeams);
+    
+    if (savedTournaments) {
+        try {
+            const parsedTournaments = JSON.parse(savedTournaments);
+            console.log('✅ Tournaments saved successfully:', parsedTournaments);
+        } catch (error) {
+            console.error('❌ Error parsing saved tournaments:', error);
+        }
+    } else {
+        console.log('❌ No tournaments found in localStorage');
+    }
+    
+    if (savedTeams) {
+        try {
+            const parsedTeams = JSON.parse(savedTeams);
+            console.log('✅ Teams saved successfully:', parsedTeams);
+        } catch (error) {
+            console.error('❌ Error parsing saved teams:', error);
+        }
+    } else {
+        console.log('❌ No teams found in localStorage');
+    }
+    
+    // Test 5: Try to load data
+    console.log('Attempting to load data...');
+    loadData();
+    
+    console.log('=== TEST COMPLETED ===');
+    alert('Тест сохранения завершен. Проверьте консоль браузера для деталей.');
+}
+
+// Reset all data function
+function resetAllData() {
+    if (confirm('Вы уверены, что хотите сбросить все данные? Это действие нельзя отменить.')) {
+        console.log('Resetting all data...');
+        
+        // Clear arrays
+        tournaments = [];
+        teams = [];
+        bracketData = null;
+        matchSchedule = [];
+        currentTournament = null;
+        
+        // Clear localStorage
+        localStorage.removeItem('volleyballTournaments');
+        localStorage.removeItem('volleyballTeams');
+        localStorage.removeItem('volleyballBracket');
+        localStorage.removeItem('volleyballSchedule');
+        
+        console.log('All data cleared');
+        
+        // Update UI
+        renderTournaments();
+        updateTournamentInfo();
+        
+        if (bracketContainer) {
+            bracketContainer.innerHTML = '<p>Турнирная сетка не сгенерирована</p>';
+        }
+        
+        if (scheduleBody) {
+            scheduleBody.innerHTML = '<tr><td colspan="6">Расписание матчей не сгенерировано</td></tr>';
+        }
+        
+        alert('Все данные сброшены успешно!');
+    }
 }

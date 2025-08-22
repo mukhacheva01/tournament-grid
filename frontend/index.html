@@ -42,6 +42,7 @@
                         <button id="generate-bracket-btn" class="btn btn-success">Сгенерировать сетку</button>
                         <button id="reset-data-btn" class="btn btn-danger">Сбросить данные</button>
                         <button id="toggle-edit-btn" class="btn btn-secondary">Редактировать</button>
+                        <button id="test-save-btn" class="btn btn-outline">Тест сохранения</button>
                     </div>
                 </div>
             </div>
@@ -93,34 +94,229 @@
     <div id="tournament-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>Создать новый турнир</h2>
+            <h2 id="tournament-modal-title">Создать турнир</h2>
             <form id="tournament-form">
-                <div class="form-group">
-                    <label for="tournament-name">Название турнира</label>
-                    <input type="text" id="tournament-name" required>
+                <!-- Основные параметры турнира -->
+                <div class="form-section">
+                    <h3>Основные параметры</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tournament-name">Название турнира</label>
+                            <input type="text" id="tournament-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tournament-date-input">Дата проведения</label>
+                            <input type="date" id="tournament-date-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tournament-time">Время начала</label>
+                            <input type="time" id="tournament-time" value="10:00" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tournament-location">Место проведения</label>
+                            <input type="text" id="tournament-location" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tournament-city">Город</label>
+                            <input type="text" id="tournament-city" value="Москва" required>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="tournament-type-input">Тип турнира</label>
-                    <select id="tournament-type-input" required>
-                        <option value="">Выберите тип</option>
-                        <option value="single-elimination">На выбывание</option>
-                        <option value="round-robin">Круговой</option>
-                        <option value="double-elimination">Двойное выбывание</option>
-                    </select>
+
+                <!-- Формат турнира -->
+                <div class="form-section">
+                    <h3>Формат турнира</h3>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="single-elimination">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Single elimination</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="double-elimination" checked>
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Double elimination</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="groups">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Группы</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="pseudo-groups">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Псевдогруппа</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="sand-master">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Мастер песка</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="master-mix">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Мастер-микст</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="royal-mix">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Королевский микст</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="kings-court">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Kings of the court/Короли корта</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="kings-beach">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Kings of the beach+/Король пляжа+</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="dynamic">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Динамический</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="tournament-format" value="leagues">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Деление на лиги</span>
+                        </label>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="tournament-description">Описание</label>
-                    <textarea id="tournament-description" rows="3"></textarea>
+
+                <!-- Тип игры -->
+                <div class="form-section">
+                    <h3>Тип игры</h3>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="game-type" value="beach-2x2" checked>
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Пляжный/beachvolley 2×2</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="game-type" value="snow-3x3">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Снежный/snowvolley 3×3</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="game-type" value="park-4x4">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Парковый/parkvolley 4×4</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="game-type" value="classic-6x6">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Классика/volleyball 6×6</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="game-type" value="other">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Другой/other</span>
+                        </label>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="tournament-date-input">Дата проведения</label>
-                    <input type="date" id="tournament-date-input" required>
+
+                <!-- Пол/Микс -->
+                <div class="form-section">
+                    <h3>Пол/Микс</h3>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="gender-mix" value="men" checked>
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Мужской/Men</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="gender-mix" value="women">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Женский/Women</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="gender-mix" value="mix">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Микст/Mix</span>
+                        </label>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="tournament-location">Место проведения</label>
-                    <input type="text" id="tournament-location" required>
+
+                <!-- Ограничения -->
+                <div class="form-section">
+                    <h3>Ограничения</h3>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="restrictions" value="no-restrictions" checked>
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Без ограничений</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="restrictions" value="youth">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Молодежный</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="restrictions" value="veterans">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Ветераны</span>
+                        </label>
+                    </div>
                 </div>
-                <button type="submit">Создать турнир</button>
+
+                <!-- Организатор -->
+                <div class="form-section">
+                    <h3>Информация об организаторе</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="organizer-number">Номер организатора (если есть)</label>
+                            <input type="text" id="organizer-number" placeholder="Введите номер">
+                        </div>
+                        <div class="form-group">
+                            <label for="organizer-password">Пароль (если есть)</label>
+                            <input type="password" id="organizer-password" placeholder="Введите пароль">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <a href="#" class="get-organizer-link">Получить номер организатора</a>
+                    </div>
+                </div>
+
+                <!-- Сбор заявок -->
+                <div class="form-section">
+                    <h3>Сбор заявок</h3>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="application-collection" value="yes" checked>
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Да</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="application-collection" value="no">
+                            <span class="radio-custom"></span>
+                            <span class="radio-label">Нет</span>
+                        </label>
+                    </div>
+                    <p class="form-note">Подключить сбор заявок на turnir-online.ru</p>
+                </div>
+
+                <!-- Положения турнира -->
+                <div class="form-section">
+                    <h3>Положения турнира</h3>
+                    <div class="form-group">
+                        <textarea id="tournament-regulations" rows="8" placeholder="Дата и время окончания регистрации -
+Место проведения -
+Тип турнира (муж, жен, микс) -
+Ограничения по участникам (возраст, территория..) -
+Взнос -
+Организатор -
+Контакты организатора -"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="quick-fill-btn">Быстрое заполнение</button>
+                    <button type="submit" class="btn btn-primary">Создать турнир</button>
+                </div>
             </form>
         </div>
     </div>
