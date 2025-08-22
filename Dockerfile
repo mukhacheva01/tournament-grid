@@ -1,6 +1,9 @@
 # Используем официальный образ Node.js
 FROM node:18-alpine
 
+# Устанавливаем необходимые зависимости для сборки
+RUN apk add --no-cache python3 make g++ gcc
+
 # Создаем директорию приложения
 WORKDIR /app
 
