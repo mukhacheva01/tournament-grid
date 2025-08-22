@@ -31,20 +31,19 @@
         <div class="container">
             <div id="tournaments-list" class="section active">
                 <h2>Список турниров</h2>
+                
+                <div class="tournament-actions-header">
+                    <button id="create-tournament-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Создать турнир
+                    </button>
+                </div>
+                
                 <div class="tournament-list" id="tournaments-container">
                     <!-- Турниры будут добавляться динамически -->
                 </div>
                 
-                <div class="admin-panel">
-                    <h3>Панель администратора</h3>
-                    <div class="admin-buttons">
-                        <button id="create-tournament-btn" class="btn btn-primary">Создать турнир</button>
-                        <button id="generate-bracket-btn" class="btn btn-success">Сгенерировать сетку</button>
-                        <button id="reset-data-btn" class="btn btn-danger">Сбросить данные</button>
-                        <button id="toggle-edit-btn" class="btn btn-secondary">Редактировать</button>
-                        <button id="test-save-btn" class="btn btn-outline">Тест сохранения</button>
-                    </div>
-                </div>
+                <!-- Админ панель удалена -->
             </div>
             
             <div id="teams-input-section" class="section" style="display: none;">
@@ -69,6 +68,26 @@
             
             <div id="tournament-bracket-section" class="section">
                 <h2>Турнирная сетка</h2>
+                
+                <div class="bracket-actions">
+                    <button id="generate-bracket-btn" class="btn btn-success">
+                        <i class="fas fa-sitemap"></i>
+                        Сгенерировать сетку
+                    </button>
+                    <button id="toggle-edit-btn" class="btn btn-secondary">
+                        <i class="fas fa-edit"></i>
+                        Редактировать
+                    </button>
+                    <button id="test-save-btn" class="btn btn-outline">
+                        <i class="fas fa-save"></i>
+                        Тест сохранения
+                    </button>
+                    <button id="reset-data-btn" class="btn btn-danger">
+                        <i class="fas fa-trash"></i>
+                        Сбросить данные
+                    </button>
+                </div>
+                
                 <div class="tournament-bracket" id="bracket-container">
                     <!-- Турнирная сетка будет генерироваться динамически -->
                 </div>
