@@ -98,6 +98,12 @@ function setupEventListeners() {
     if (resetDataBtn) {
         resetDataBtn.addEventListener('click', resetAllData);
     }
+    
+    // Add system health button event listener
+    const systemHealthBtn = document.getElementById('system-health-btn');
+    if (systemHealthBtn) {
+        systemHealthBtn.addEventListener('click', showSystemHealth);
+    }
 }
 
 
@@ -175,6 +181,12 @@ function loadData() {
         currentTournament = tournaments[0];
         console.log('Current tournament set to:', currentTournament);
     }
+    
+    // Если есть данные сетки, рендерим их
+    if (bracketData) {
+        console.log('Rendering existing bracket data...');
+        renderImprovedBracket();
+    }
 }
 
 
@@ -224,7 +236,10 @@ function toggleEditMode() {
         teamsInputSection.style.display = 'none';
     }
     
-    renderBracket();
+    // Используем новую функцию рендеринга сетки
+    if (bracketData) {
+        renderImprovedBracket();
+    }
 }
 
 
@@ -645,115 +660,527 @@ function viewTournamentBracket(id) {
 
 
 function generateBracket() {
-    if (teams.length < 2) {
-        alert('Для генерации сетки нужно минимум 2 команды!');
-        return;
-    }
-    
-
-    bracketData = null;
-    matchSchedule = [];
-    
-
-    const bracket = createInitialBracket(teams);
-    bracketData = bracket;
-    
-
-    generateSchedule(bracket);
-    
-    saveData();
-    
-
-    showSection('tournament-bracket-section');
-    document.querySelector('[data-section="tournament-bracket-section"]').classList.add('active');
-    document.querySelector('[data-section="tournaments-list"]').classList.remove('active');
-    
-
-    renderBracket();
-    renderSchedule();
-}
-
-
-function createInitialBracket(teams) {
-    const teamCount = teams.length;
-    
-
-    const hasBye = teamCount % 2 !== 0;
-    const teamsWithBye = hasBye ? [...teams, null] : teams;
-    const effectiveTeamCount = teamsWithBye.length;
-    
-
-    const rounds = Math.ceil(Math.log2(effectiveTeamCount));
-    
-
-    const bracket = {
-        rounds: []
-    };
-    
-
-    for (let i = 0; i < rounds; i++) {
-        const matchCount = Math.pow(2, rounds - i - 1);
-        const round = {
-            name: getRoundName(i, rounds),
-            matches: []
-        };
+    try {
+        console.log('=== STARTING BRACKET GENERATION ===');
         
-        for (let j = 0; j < matchCount; j++) {
-            round.matches.push({
-                id: `round-${i}-match-${j}`,
-                team1: null,
-                team2: null,
-                winner: null,
-                completed: false,
-                isBye: false
-            });
+        // Проверяем здоровье системы
+        const systemHealth = checkSystemHealth();
+        if (!systemHealth.localStorage) {
+            alert('Проблема с сохранением данных. Проверьте настройки браузера.');
+            return;
         }
         
-        bracket.rounds.push(round);
-    }
-    
-
-    const firstRound = bracket.rounds[0];
-    let teamIndex = 0;
-    
-    for (let i = 0; i < firstRound.matches.length; i++) {
-        const match = firstRound.matches[i];
-        
-        if (teamIndex < teamsWithBye.length) {
-            match.team1 = teamsWithBye[teamIndex++];
+        // Проверяем количество команд
+        if (!teams || teams.length < 2) {
+            alert('Для генерации сетки нужно минимум 2 команды!');
+            return;
         }
         
-        if (teamIndex < teamsWithBye.length) {
-            match.team2 = teamsWithBye[teamIndex++];
-        }
-        
-    
-        if (match.team1 === null || match.team2 === null) {
-            match.isBye = true;
-            match.completed = true;
-            
-
-            if (match.team1 !== null) {
-                match.winner = match.team1;
-    
-                updateNextMatches(match, match.winner);
-            } else if (match.team2 !== null) {
-                match.winner = match.team2;
-        
-                updateNextMatches(match, match.winner);
+        if (teams.length > 128) {
+            const proceed = confirm(`Вы пытаетесь создать сетку для ${teams.length} команд. Это может занять много времени и ресурсов. Продолжить?`);
+            if (!proceed) {
+                return;
             }
         }
+        
+        // Очищаем предыдущие данные
+        bracketData = null;
+        matchSchedule = [];
+        
+        console.log(`Generating bracket for ${teams.length} teams...`);
+        
+        // Создаем улучшенную сетку с мониторингом производительности
+        const bracket = monitorPerformance('bracket-creation', () => {
+            return createImprovedBracket(teams);
+        });
+        
+        if (!bracket) {
+            console.error('Failed to create bracket');
+            showNotification('Не удалось создать сетку. Проверьте консоль для деталей.', 'error');
+            return;
+        }
+        
+        bracketData = bracket;
+        
+        console.log('Bracket created successfully, generating schedule...');
+        
+        // Генерируем расписание с мониторингом производительности
+        monitorPerformance('schedule-generation', () => {
+            generateImprovedSchedule(bracket);
+        });
+        
+        // Сохраняем данные с мониторингом производительности
+        console.log('Saving data...');
+        monitorPerformance('data-saving', () => {
+            saveData();
+        });
+        
+        // Показываем секцию с сеткой
+        showSection('tournament-bracket-section');
+        document.querySelector('[data-section="tournament-bracket-section"]').classList.add('active');
+        document.querySelector('[data-section="tournaments-list"]').classList.remove('active');
+        
+        // Рендерим сетку и расписание с мониторингом производительности
+        console.log('Rendering bracket and schedule...');
+        const renderTime = monitorPerformance('bracket-rendering', () => {
+            renderImprovedBracket();
+            renderSchedule();
+        });
+        
+        // Показываем статистику
+        showBracketStats(bracket, renderTime);
+        
+        console.log('=== BRACKET GENERATION COMPLETED ===');
+        
+        // Показываем уведомление об успехе
+        showNotification('Турнирная сетка успешно создана!', 'success');
+        
+    } catch (error) {
+        console.error('Critical error in bracket generation:', error);
+        handleCriticalError(error, 'bracket-generation');
+        
+        // Очищаем данные в случае ошибки
+        bracketData = null;
+        matchSchedule = [];
     }
-    
-    return bracket;
 }
 
+function showBracketStats(bracket, generationTime) {
+    try {
+        const stats = {
+            totalTeams: bracket.totalTeams,
+            totalRounds: bracket.rounds.length,
+            totalMatches: bracket.rounds.reduce((sum, round) => sum + round.matches.length, 0),
+            byeMatches: bracket.rounds[0].matches.filter(match => match.isBye).length,
+            generationTime: generationTime.toFixed(2)
+        };
+        
+        console.log('Bracket Statistics:', stats);
+        
+        // Показываем уведомление пользователю
+        const message = `Сетка создана успешно!\n\n` +
+                       `Команд: ${stats.totalTeams}\n` +
+                       `Раундов: ${stats.totalRounds}\n` +
+                       `Матчей: ${stats.totalMatches}\n` +
+                       `BYE-матчей: ${stats.byeMatches}\n` +
+                       `Время генерации: ${stats.generationTime}мс`;
+        
+        // Создаем красивое уведомление
+        showNotification(message, 'success');
+        
+    } catch (error) {
+        console.error('Error showing bracket stats:', error);
+    }
+}
 
-function getRoundName(roundIndex, totalRounds) {
+function showNotification(message, type = 'info') {
+    try {
+        // Удаляем существующие уведомления
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(n => n.remove());
+        
+        // Создаем новое уведомление
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <span class="notification-message">${message.replace(/\n/g, '<br>')}</span>
+                <button class="notification-close">&times;</button>
+            </div>
+        `;
+        
+        // Добавляем стили
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${type === 'success' ? '#48bb78' : type === 'error' ? '#f56565' : '#4299e1'};
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            max-width: 400px;
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        // Добавляем анимацию
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Добавляем обработчик закрытия
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            notification.remove();
+        });
+        
+        // Добавляем в DOM
+        document.body.appendChild(notification);
+        
+        // Автоматически скрываем через 5 секунд
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+        
+    } catch (error) {
+        console.error('Error showing notification:', error);
+        // Fallback к простому alert
+        alert(message);
+    }
+}
+
+function createImprovedBracket(teams) {
+    try {
+        // Проверяем входные данные
+        if (!Array.isArray(teams)) {
+            console.error('Teams must be an array');
+            throw new Error('Команды должны быть массивом');
+        }
+        
+        const teamCount = teams.length;
+        console.log(`Creating bracket for ${teamCount} teams`);
+        
+        // Ограничиваем максимальное количество команд для предотвращения проблем с производительностью
+        const MAX_TEAMS = 128; // Максимум 128 команд (7 раундов)
+        if (teamCount > MAX_TEAMS) {
+            console.warn(`Too many teams (${teamCount}), limiting to ${MAX_TEAMS}`);
+            teams = teams.slice(0, MAX_TEAMS);
+        }
+        
+        // Минимальное количество команд
+        if (teamCount < 2) {
+            throw new Error('Для создания сетки нужно минимум 2 команды');
+        }
+        
+        // Определяем количество раундов с проверкой
+        const rounds = Math.ceil(Math.log2(teamCount));
+        const totalSlots = Math.pow(2, rounds);
+        
+        console.log(`Tournament structure: ${rounds} rounds, ${totalSlots} total slots`);
+        
+        // Проверяем, что количество раундов не превышает разумные пределы
+        if (rounds > 10) {
+            throw new Error('Слишком много раундов для турнира');
+        }
+        
+        // Создаем массив с bye-командами если нужно
+        const teamsWithBye = [...teams];
+        while (teamsWithBye.length < totalSlots) {
+            teamsWithBye.push(null);
+        }
+        
+        // Создаем структуру сетки
+        const bracket = {
+            rounds: [],
+            totalTeams: teamCount,
+            totalSlots: totalSlots,
+            tournamentId: currentTournament ? currentTournament.id : null,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Создаем раунды с проверкой
+        for (let i = 0; i < rounds; i++) {
+            const matchCount = Math.pow(2, rounds - i - 1);
+            
+            // Проверяем, что количество матчей разумное
+            if (matchCount > 1000) {
+                throw new Error('Слишком много матчей в раунде');
+            }
+            
+            const round = {
+                name: getImprovedRoundName(i, rounds),
+                matches: [],
+                roundNumber: i,
+                matchCount: matchCount
+            };
+            
+            for (let j = 0; j < matchCount; j++) {
+                round.matches.push({
+                    id: `round-${i}-match-${j}`,
+                    team1: null,
+                    team2: null,
+                    winner: null,
+                    completed: false,
+                    isBye: false,
+                    score1: null,
+                    score2: null,
+                    nextMatchId: null,
+                    position: j,
+                    roundIndex: i
+                });
+            }
+            
+            bracket.rounds.push(round);
+        }
+        
+        // Заполняем первый раунд с правильным seeding и проверками
+        const firstRound = bracket.rounds[0];
+        const seededTeams = seedTeams(teamsWithBye, totalSlots);
+        
+        console.log(`Seeded teams: ${seededTeams.length} total, ${teams.length} actual teams`);
+        
+        let matchIndex = 0;
+        let byeMatches = 0;
+        
+        for (let i = 0; i < seededTeams.length; i += 2) {
+            if (matchIndex < firstRound.matches.length) {
+                const match = firstRound.matches[matchIndex];
+                match.team1 = seededTeams[i];
+                match.team2 = seededTeams[i + 1];
+                
+                // Проверяем bye-матчи
+                if (match.team1 === null || match.team2 === null) {
+                    match.isBye = true;
+                    match.completed = true;
+                    byeMatches++;
+                    
+                    if (match.team1 !== null) {
+                        match.winner = match.team1;
+                        match.score1 = 1;
+                        match.score2 = 0;
+                        console.log(`Bye match: ${match.team1.name} advances automatically`);
+                    } else if (match.team2 !== null) {
+                        match.winner = match.team2;
+                        match.score1 = 0;
+                        match.score2 = 1;
+                        console.log(`Bye match: ${match.team2.name} advances automatically`);
+                    }
+                    
+                    // Обновляем следующие матчи с проверкой на ошибки
+                    try {
+                        updateNextMatches(bracket, match, match.winner);
+                    } catch (error) {
+                        console.error('Error updating next matches for bye:', error);
+                        // Продолжаем выполнение, не прерывая создание сетки
+                    }
+                }
+                
+                matchIndex++;
+            }
+        }
+        
+        console.log(`Created ${matchIndex} matches in first round, ${byeMatches} bye matches`);
+        
+        // Устанавливаем связи между матчами с проверкой
+        try {
+            setupMatchConnections(bracket);
+        } catch (error) {
+            console.error('Error setting up match connections:', error);
+            // Продолжаем выполнение
+        }
+        
+        // Валидация созданной сетки
+        validateBracket(bracket);
+        
+        console.log('Bracket created successfully:', bracket);
+        return bracket;
+        
+    } catch (error) {
+        console.error('Error creating bracket:', error);
+        alert(`Ошибка при создании сетки: ${error.message}`);
+        return null;
+    }
+}
+
+function validateBracket(bracket) {
+    try {
+        console.log('Validating bracket...');
+        
+        if (!bracket || !bracket.rounds || !Array.isArray(bracket.rounds)) {
+            throw new Error('Неверная структура сетки');
+        }
+        
+        if (bracket.rounds.length === 0) {
+            throw new Error('Сетка не содержит раундов');
+        }
+        
+        let totalMatches = 0;
+        let totalTeams = 0;
+        
+        bracket.rounds.forEach((round, roundIndex) => {
+            if (!round.matches || !Array.isArray(round.matches)) {
+                throw new Error(`Раунд ${roundIndex} не содержит матчей`);
+            }
+            
+            totalMatches += round.matches.length;
+            
+            round.matches.forEach((match, matchIndex) => {
+                if (!match.id) {
+                    throw new Error(`Матч ${matchIndex} в раунде ${roundIndex} не имеет ID`);
+                }
+                
+                if (match.team1 && match.team1.id) totalTeams++;
+                if (match.team2 && match.team2.id) totalTeams++;
+            });
+        });
+        
+        console.log(`Bracket validation passed: ${totalMatches} matches, ${totalTeams} team slots`);
+        
+    } catch (error) {
+        console.error('Bracket validation failed:', error);
+        throw error;
+    }
+}
+
+function seedTeams(teams, totalSlots) {
+    try {
+        console.log(`Seeding ${teams.length} teams into ${totalSlots} slots`);
+        
+        if (!Array.isArray(teams) || teams.length === 0) {
+            console.warn('No teams to seed');
+            return new Array(totalSlots).fill(null);
+        }
+        
+        const seededTeams = new Array(totalSlots).fill(null);
+        
+        // Улучшенный seeding алгоритм для больших турниров
+        if (teams.length <= 8) {
+            // Для небольших турниров используем простое seeding
+            let topIndex = 0;
+            let bottomIndex = totalSlots - 1;
+            
+            for (let i = 0; i < teams.length; i++) {
+                if (i % 2 === 0) {
+                    seededTeams[topIndex++] = teams[i];
+                } else {
+                    seededTeams[bottomIndex--] = teams[i];
+                }
+            }
+        } else {
+            // Для больших турниров используем более сложный seeding
+            const seedOrder = generateSeedOrder(teams.length, totalSlots);
+            
+            for (let i = 0; i < teams.length && i < seedOrder.length; i++) {
+                const slotIndex = seedOrder[i];
+                if (slotIndex < totalSlots) {
+                    seededTeams[slotIndex] = teams[i];
+                }
+            }
+        }
+        
+        console.log(`Seeding completed. Filled ${seededTeams.filter(t => t !== null).length} slots`);
+        return seededTeams;
+        
+    } catch (error) {
+        console.error('Error in seeding:', error);
+        // Возвращаем простое распределение в случае ошибки
+        const fallbackSeeding = new Array(totalSlots).fill(null);
+        for (let i = 0; i < teams.length && i < totalSlots; i++) {
+            fallbackSeeding[i] = teams[i];
+        }
+        return fallbackSeeding;
+    }
+}
+
+function generateSeedOrder(teamCount, totalSlots) {
+    try {
+        const order = [];
+        const half = Math.floor(totalSlots / 2);
+        
+        // Первая команда в первом слоте
+        order.push(0);
+        
+        if (teamCount > 1) {
+            // Вторая команда в последнем слоте
+            order.push(totalSlots - 1);
+        }
+        
+        if (teamCount > 2) {
+            // Третья команда в середине
+            order.push(half);
+        }
+        
+        if (teamCount > 3) {
+            // Четвертая команда в середине + 1
+            order.push(half + 1);
+        }
+        
+        // Заполняем оставшиеся слоты по принципу "змейки"
+        let leftIndex = 1;
+        let rightIndex = totalSlots - 2;
+        
+        for (let i = 4; i < teamCount; i++) {
+            if (i % 2 === 0) {
+                if (leftIndex < half) {
+                    order.push(leftIndex++);
+                }
+            } else {
+                if (rightIndex > half) {
+                    order.push(rightIndex--);
+                }
+            }
+        }
+        
+        return order;
+        
+    } catch (error) {
+        console.error('Error generating seed order:', error);
+        // Возвращаем простое последовательное распределение
+        const simpleOrder = [];
+        for (let i = 0; i < teamCount; i++) {
+            simpleOrder.push(i);
+        }
+        return simpleOrder;
+    }
+}
+
+function setupMatchConnections(bracket) {
+    try {
+        console.log('Setting up match connections...');
+        
+        if (!bracket || !bracket.rounds || bracket.rounds.length < 2) {
+            console.warn('Not enough rounds to set up connections');
+            return;
+        }
+        
+        let connectionsCreated = 0;
+        
+        // Устанавливаем связи между матчами для продвижения победителей
+        for (let roundIndex = 0; roundIndex < bracket.rounds.length - 1; roundIndex++) {
+            const currentRound = bracket.rounds[roundIndex];
+            const nextRound = bracket.rounds[roundIndex + 1];
+            
+            if (!currentRound || !nextRound || !currentRound.matches || !nextRound.matches) {
+                console.warn(`Invalid round structure at index ${roundIndex}`);
+                continue;
+            }
+            
+            for (let matchIndex = 0; matchIndex < currentRound.matches.length; matchIndex++) {
+                const currentMatch = currentRound.matches[matchIndex];
+                const nextMatchIndex = Math.floor(matchIndex / 2);
+                
+                if (currentMatch && nextMatchIndex < nextRound.matches.length) {
+                    const nextMatch = nextRound.matches[nextMatchIndex];
+                    if (nextMatch) {
+                        currentMatch.nextMatchId = nextMatch.id;
+                        connectionsCreated++;
+                    }
+                }
+            }
+        }
+        
+        console.log(`Created ${connectionsCreated} match connections`);
+        
+    } catch (error) {
+        console.error('Error setting up match connections:', error);
+        // Продолжаем выполнение без связей
+    }
+}
+
+function getImprovedRoundName(roundIndex, totalRounds) {
     const roundNames = [
         'Финал',
         'Полуфинал',
-        'Четвертьфинал'
+        'Четвертьфинал',
+        '1/8 финала',
+        '1/16 финала'
     ];
     
     const difference = totalRounds - roundIndex - 1;
@@ -765,94 +1192,300 @@ function getRoundName(roundIndex, totalRounds) {
     return `Раунд ${roundIndex + 1}`;
 }
 
-
-function generateSchedule(bracket) {
-    matchSchedule = [];
-    
-
-    const startDate = currentTournament ? new Date(currentTournament.date) : new Date();
-    let matchDateTime = new Date(startDate);
-    matchDateTime.setHours(10, 0, 0, 0);
-    
-
-    bracket.rounds.forEach(round => {
-        round.matches.forEach(match => {
-    
-            if ((!match.team1 && !match.team2) || match.completed) {
+function generateImprovedSchedule(bracket) {
+    try {
+        console.log('Generating improved schedule...');
+        
+        if (!bracket || !bracket.rounds) {
+            console.warn('Invalid bracket for schedule generation');
+            matchSchedule = [];
+            return;
+        }
+        
+        matchSchedule = [];
+        
+        // Начинаем с даты турнира
+        const startDate = currentTournament ? new Date(currentTournament.date) : new Date();
+        let matchDateTime = new Date(startDate);
+        matchDateTime.setHours(10, 0, 0, 0);
+        
+        let totalMatches = 0;
+        let scheduledMatches = 0;
+        
+        // Генерируем расписание для каждого раунда
+        bracket.rounds.forEach((round, roundIndex) => {
+            if (!round.matches || !Array.isArray(round.matches)) {
+                console.warn(`Invalid round ${roundIndex} for schedule generation`);
                 return;
             }
             
-    
-            matchSchedule.push({
-                round: round.name,
-                team1: match.team1 ? match.team1.name : 'TBD',
-                team2: match.team2 ? match.team2.name : 'TBD',
-                date: matchDateTime.toLocaleDateString('ru-RU'),
-                time: matchDateTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-                court: `Площадка ${Math.floor(Math.random() * 3) + 1}`,
-                matchId: match.id
+            console.log(`Scheduling round ${round.name} with ${round.matches.length} matches`);
+            
+            round.matches.forEach((match, matchIndex) => {
+                totalMatches++;
+                
+                // Пропускаем bye-матчи и завершенные матчи
+                if (match.isBye || match.completed) {
+                    return;
+                }
+                
+                try {
+                    // Добавляем матч в расписание
+                    const scheduleEntry = {
+                        round: round.name,
+                        team1: match.team1 ? match.team1.name : 'TBD',
+                        team2: match.team2 ? match.team2.name : 'TBD',
+                        date: matchDateTime.toLocaleDateString('ru-RU'),
+                        time: matchDateTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                        court: `Площадка ${(matchIndex % 3) + 1}`,
+                        matchId: match.id,
+                        roundNumber: roundIndex,
+                        matchNumber: matchIndex
+                    };
+                    
+                    matchSchedule.push(scheduleEntry);
+                    scheduledMatches++;
+                    
+                    // Увеличиваем время для следующего матча
+                    matchDateTime.setMinutes(matchDateTime.getMinutes() + 45);
+                    
+                    // Если прошло 4 часа, переходим на следующий день
+                    if (matchDateTime.getHours() >= 22) {
+                        matchDateTime.setDate(matchDateTime.getDate() + 1);
+                        matchDateTime.setHours(10, 0, 0, 0);
+                    }
+                    
+                } catch (error) {
+                    console.error(`Error scheduling match ${match.id}:`, error);
+                    // Продолжаем с следующим матчем
+                }
             });
             
-    
-            matchDateTime.setMinutes(matchDateTime.getMinutes() + 30);
+            // Перерыв между раундами
+            if (roundIndex < bracket.rounds.length - 1) {
+                matchDateTime.setHours(matchDateTime.getHours() + 2);
+            }
         });
         
-    
-        matchDateTime.setHours(matchDateTime.getHours() + 2);
-    });
+        console.log(`Schedule generated: ${scheduledMatches} matches scheduled out of ${totalMatches} total`);
+        
+    } catch (error) {
+        console.error('Error generating schedule:', error);
+        matchSchedule = [];
+        alert(`Ошибка при генерации расписания: ${error.message}`);
+    }
 }
 
-
-function renderBracket() {
-    if (!bracketData) {
-        bracketContainer.innerHTML = '<p>Турнирная сетка не сгенерирована</p>';
-        return;
+function renderImprovedBracket() {
+    try {
+        if (!bracketData) {
+            bracketContainer.innerHTML = '<p>Турнирная сетка не сгенерирована</p>';
+            return;
+        }
+        
+        console.log('Rendering improved bracket...');
+        const startTime = performance.now();
+        
+        // Очищаем контейнер
+        bracketContainer.innerHTML = '';
+        
+        // Проверяем размер сетки для оптимизации
+        const totalMatches = bracketData.rounds.reduce((sum, round) => sum + round.matches.length, 0);
+        const isLargeBracket = totalMatches > 50;
+        
+        if (isLargeBracket) {
+            console.log('Large bracket detected, using optimized rendering...');
+            renderLargeBracketOptimized();
+        } else {
+            console.log('Standard bracket rendering...');
+            renderStandardBracket();
+        }
+        
+        const endTime = performance.now();
+        console.log(`Bracket rendered in ${(endTime - startTime).toFixed(2)}ms`);
+        
+    } catch (error) {
+        console.error('Error rendering bracket:', error);
+        bracketContainer.innerHTML = `<p>Ошибка при отображении сетки: ${error.message}</p>`;
     }
-    
-    bracketContainer.innerHTML = '';
-    
+}
 
+function renderStandardBracket() {
+    // Создаем контейнер для сетки
     const bracketEl = document.createElement('div');
-    bracketEl.className = 'bracket';
+    bracketEl.className = 'improved-bracket';
     
-
-    bracketData.rounds.forEach(round => {
-        const roundEl = document.createElement('div');
-        roundEl.className = 'round';
-        
-        const roundTitle = document.createElement('h3');
-        roundTitle.textContent = round.name;
-        roundEl.appendChild(roundTitle);
-        
-        const matchesEl = document.createElement('div');
-        matchesEl.className = 'matches';
-        
-
-        round.matches.forEach(match => {
-            const matchEl = createMatchElement(match, round);
-            matchesEl.appendChild(matchEl);
-        });
-        
-        roundEl.appendChild(matchesEl);
-        bracketEl.appendChild(roundEl);
+    // Добавляем заголовок
+    const headerEl = document.createElement('div');
+    headerEl.className = 'bracket-header';
+    headerEl.innerHTML = `
+        <h2>Турнирная сетка</h2>
+        <div class="bracket-info">
+            <span>Команд: ${bracketData.totalTeams}</span>
+            <span>Раундов: ${bracketData.rounds.length}</span>
+        </div>
+    `;
+    bracketEl.appendChild(headerEl);
+    
+    // Создаем сетку
+    const gridEl = document.createElement('div');
+    gridEl.className = 'bracket-grid';
+    
+    // Рендерим каждый раунд
+    bracketData.rounds.forEach((round, roundIndex) => {
+        const roundEl = createImprovedRoundElement(round, roundIndex);
+        gridEl.appendChild(roundEl);
     });
     
+    bracketEl.appendChild(gridEl);
     bracketContainer.appendChild(bracketEl);
 }
 
+function renderLargeBracketOptimized() {
+    // Для больших сеток используем виртуализацию и ленивую загрузку
+    const bracketEl = document.createElement('div');
+    bracketEl.className = 'improved-bracket large-bracket';
+    
+    // Добавляем заголовок с дополнительной информацией
+    const headerEl = document.createElement('div');
+    headerEl.className = 'bracket-header';
+    headerEl.innerHTML = `
+        <h2>Турнирная сетка</h2>
+        <div class="bracket-info">
+            <span>Команд: ${bracketData.totalTeams}</span>
+            <span>Раундов: ${bracketData.rounds.length}</span>
+            <span>Матчей: ${bracketData.rounds.reduce((sum, round) => sum + round.matches.length, 0)}</span>
+        </div>
+        <div class="bracket-controls">
+            <button class="btn btn-secondary" id="expand-all-btn">Развернуть все</button>
+            <button class="btn btn-secondary" id="collapse-all-btn">Свернуть все</button>
+        </div>
+    `;
+    bracketEl.appendChild(headerEl);
+    
+    // Создаем сетку с ленивой загрузкой
+    const gridEl = document.createElement('div');
+    gridEl.className = 'bracket-grid large-bracket-grid';
+    
+    // Рендерим только первые несколько раундов для начала
+    const initialRounds = Math.min(3, bracketData.rounds.length);
+    
+    for (let i = 0; i < initialRounds; i++) {
+        const roundEl = createImprovedRoundElement(bracketData.rounds[i], i);
+        gridEl.appendChild(roundEl);
+    }
+    
+    // Добавляем кнопку "Показать больше" если есть еще раунды
+    if (bracketData.rounds.length > initialRounds) {
+        const showMoreBtn = document.createElement('div');
+        showMoreBtn.className = 'show-more-rounds';
+        showMoreBtn.innerHTML = `
+            <button class="btn btn-primary" id="show-more-rounds-btn">
+                Показать еще ${bracketData.rounds.length - initialRounds} раундов
+            </button>
+        `;
+        gridEl.appendChild(showMoreBtn);
+        
+        // Обработчик для показа дополнительных раундов
+        showMoreBtn.querySelector('#show-more-rounds-btn').addEventListener('click', () => {
+            showMoreBtn.remove();
+            renderRemainingRounds(gridEl, initialRounds);
+        });
+    }
+    
+    bracketEl.appendChild(gridEl);
+    bracketContainer.appendChild(bracketEl);
+    
+    // Добавляем обработчики для кнопок управления
+    setupLargeBracketControls(bracketEl);
+}
 
-function createMatchElement(match, round) {
+async function renderRemainingRounds(gridEl, startIndex) {
+    try {
+        console.log(`Rendering remaining rounds from ${startIndex}...`);
+        
+        for (let i = startIndex; i < bracketData.rounds.length; i++) {
+            const roundEl = createImprovedRoundElement(bracketData.rounds[i], i);
+            gridEl.appendChild(roundEl);
+            
+            // Небольшая задержка для предотвращения блокировки UI
+            if (i % 5 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+        }
+        
+        console.log('All rounds rendered successfully');
+        
+    } catch (error) {
+        console.error('Error rendering remaining rounds:', error);
+    }
+}
+
+function setupLargeBracketControls(bracketEl) {
+    // Обработчик для разворачивания всех раундов
+    const expandAllBtn = bracketEl.querySelector('#expand-all-btn');
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', () => {
+            const roundElements = bracketEl.querySelectorAll('.bracket-round');
+            roundElements.forEach(round => {
+                round.classList.add('expanded');
+            });
+        });
+    }
+    
+    // Обработчик для сворачивания всех раундов
+    const collapseAllBtn = bracketEl.querySelector('#collapse-all-btn');
+    if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', () => {
+            const roundElements = bracketEl.querySelectorAll('.bracket-round');
+            roundElements.forEach(round => {
+                round.classList.remove('expanded');
+            });
+        });
+    }
+}
+
+function createImprovedRoundElement(round, roundIndex) {
+    const roundEl = document.createElement('div');
+    roundEl.className = 'bracket-round';
+    roundEl.dataset.round = roundIndex;
+    
+    // Заголовок раунда
+    const roundTitle = document.createElement('div');
+    roundTitle.className = 'round-title';
+    roundTitle.innerHTML = `
+        <h3>${round.name}</h3>
+        <span class="match-count">${round.matches.length} матч(ей)</span>
+    `;
+    roundEl.appendChild(roundTitle);
+    
+    // Контейнер для матчей
+    const matchesEl = document.createElement('div');
+    matchesEl.className = 'round-matches';
+    
+    // Рендерим матчи
+    round.matches.forEach((match, matchIndex) => {
+        const matchEl = createImprovedMatchElement(match, round, roundIndex, matchIndex);
+        matchesEl.appendChild(matchEl);
+    });
+    
+    roundEl.appendChild(matchesEl);
+    return roundEl;
+}
+
+function createImprovedMatchElement(match, round, roundIndex, matchIndex) {
     const matchEl = document.createElement('div');
-    matchEl.className = 'match';
+    matchEl.className = `bracket-match ${match.isBye ? 'bye-match' : ''} ${match.completed ? 'completed' : ''}`;
     matchEl.dataset.matchId = match.id;
     
-
+    // Определяем, является ли это финалом
     const isFinal = round.name === 'Финал';
     
+    // Получаем имена команд
     let team1Name = match.team1 ? match.team1.name : 'TBD';
     let team2Name = match.team2 ? match.team2.name : 'TBD';
     
-
+    // Добавляем галочку победителю
     if (match.completed && match.winner) {
         if (match.winner.id === (match.team1?.id || null)) {
             team1Name = `${team1Name} ✓`;
@@ -861,14 +1494,24 @@ function createMatchElement(match, round) {
         }
     }
     
+    // Создаем HTML для матча
     matchEl.innerHTML = `
-        <div class="match-team team1 ${match.winner && match.team1 && match.winner.id === match.team1.id ? 'winner' : ''}">
-            ${team1Name}
+        <div class="match-header">
+            <span class="match-number">#${matchIndex + 1}</span>
+            ${match.isBye ? '<span class="bye-label">BYE</span>' : ''}
         </div>
-        <div class="match-team team2 ${match.winner && match.team2 && match.winner.id === match.team2.id ? 'winner' : ''}">
-            ${team2Name}
+        <div class="match-teams">
+            <div class="match-team team1 ${match.winner && match.team1 && match.winner.id === match.team1.id ? 'winner' : ''}">
+                <span class="team-name">${team1Name}</span>
+                ${match.score1 !== null ? `<span class="team-score">${match.score1}</span>` : ''}
+            </div>
+            <div class="match-vs">VS</div>
+            <div class="match-team team2 ${match.winner && match.team2 && match.winner.id === match.team2.id ? 'winner' : ''}">
+                <span class="team-name">${team2Name}</span>
+                ${match.score2 !== null ? `<span class="team-score">${match.score2}</span>` : ''}
+            </div>
         </div>
-        ${isEditMode && !match.completed && match.team1 && match.team2 ? 
+        ${isEditMode && !match.completed && match.team1 && match.team2 && !match.isBye ? 
             `<div class="match-actions">
                 <button class="select-winner-btn" data-winner="team1">${match.team1.name}</button>
                 <button class="select-winner-btn" data-winner="team2">${match.team2.name}</button>
@@ -876,12 +1519,12 @@ function createMatchElement(match, round) {
         }
     `;
     
-
-    if (isEditMode && !match.completed && match.team1 && match.team2) {
+    // Добавляем обработчики событий для кнопок выбора победителя
+    if (isEditMode && !match.completed && match.team1 && match.team2 && !match.isBye) {
         matchEl.querySelectorAll('.select-winner-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const winnerTeam = this.dataset.winner === 'team1' ? match.team1 : match.team2;
-                setMatchWinner(match, winnerTeam);
+                setImprovedMatchWinner(match, winnerTeam);
             });
         });
     }
@@ -889,93 +1532,122 @@ function createMatchElement(match, round) {
     return matchEl;
 }
 
-
-function setMatchWinner(match, winner) {
+function setImprovedMatchWinner(match, winner) {
     match.winner = winner;
     match.completed = true;
     
-
-    updateNextMatches(match, winner);
+    // Устанавливаем счет
+    if (winner.id === (match.team1?.id || null)) {
+        match.score1 = 1;
+        match.score2 = 0;
+    } else {
+        match.score1 = 0;
+        match.score2 = 1;
+    }
     
+    // Обновляем следующие матчи
+    updateNextMatches(bracketData, match, winner);
+    
+    // Сохраняем данные
     saveData();
-    renderBracket();
+    
+    // Перерисовываем сетку и расписание
+    renderImprovedBracket();
     renderSchedule();
 }
 
-
-function createInitialBracket(teams) {
-    const teamCount = teams.length;
-    
-
-    const hasBye = teamCount % 2 !== 0;
-    const teamsWithBye = hasBye ? [...teams, null] : teams;
-    const effectiveTeamCount = teamsWithBye.length;
-    
-
-    const rounds = Math.ceil(Math.log2(effectiveTeamCount));
-    
-
-    const bracket = {
-        rounds: []
-    };
-    
-
-    for (let i = 0; i < rounds; i++) {
-        const matchCount = Math.pow(2, rounds - i - 1);
-        const round = {
-            name: getRoundName(i, rounds),
-            matches: []
-        };
-        
-        for (let j = 0; j < matchCount; j++) {
-            round.matches.push({
-                id: `round-${i}-match-${j}`,
-                team1: null,
-                team2: null,
-                winner: null,
-                completed: false,
-                isBye: false
-            });
+function updateNextMatches(bracket, currentMatch, winner) {
+    try {
+        if (!currentMatch || !currentMatch.nextMatchId || !winner) {
+            console.warn('Invalid parameters for updateNextMatches');
+            return;
         }
         
-        bracket.rounds.push(round);
-    }
-    
-
-    const firstRound = bracket.rounds[0];
-    let teamIndex = 0;
-    
-    for (let i = 0; i < firstRound.matches.length; i++) {
-        const match = firstRound.matches[i];
-        
-        if (teamIndex < teamsWithBye.length) {
-            match.team1 = teamsWithBye[teamIndex++];
+        if (!bracket || !bracket.rounds) {
+            console.warn('Invalid bracket structure for updateNextMatches');
+            return;
         }
         
-        if (teamIndex < teamsWithBye.length) {
-            match.team2 = teamsWithBye[teamIndex++];
-        }
+        // Находим следующий матч
+        let nextMatch = null;
+        let found = false;
         
-    
-        if (match.team1 === null || match.team2 === null) {
-            match.isBye = true;
-            match.completed = true;
+        for (const round of bracket.rounds) {
+            if (!round.matches) continue;
             
-
-            if (match.team1 !== null) {
-                match.winner = match.team1;
-    
-                updateNextMatches(match, match.winner);
-            } else if (match.team2 !== null) {
-                match.winner = match.team2;
+            for (const match of round.matches) {
+                if (match && match.id === currentMatch.nextMatchId) {
+                    nextMatch = match;
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
         
-                updateNextMatches(match, match.winner);
+        if (!nextMatch) {
+            console.warn(`Next match not found for ID: ${currentMatch.nextMatchId}`);
+            return;
+        }
+        
+        // Определяем, какая команда должна быть team1 или team2
+        const currentMatchIndex = currentMatch.position || 0;
+        const isFirstHalf = currentMatchIndex % 2 === 0;
+        
+        if (isFirstHalf) {
+            nextMatch.team1 = winner;
+        } else {
+            nextMatch.team2 = winner;
+        }
+        
+        // Проверяем, можно ли завершить матч
+        if (nextMatch.team1 && nextMatch.team2) {
+            // Проверяем на bye-матч (если одна из команд null)
+            if (nextMatch.team1 === null || nextMatch.team2 === null) {
+                nextMatch.isBye = true;
+                nextMatch.completed = true;
+                
+                if (nextMatch.team1 !== null) {
+                    nextMatch.winner = nextMatch.team1;
+                    nextMatch.score1 = 1;
+                    nextMatch.score2 = 0;
+                    console.log(`Bye match auto-completed: ${nextMatch.team1.name} advances`);
+                    
+                    // Рекурсивно обновляем следующие матчи
+                    updateNextMatches(bracket, nextMatch, nextMatch.winner);
+                } else if (nextMatch.team2 !== null) {
+                    nextMatch.winner = nextMatch.team2;
+                    nextMatch.score1 = 0;
+                    nextMatch.score2 = 1;
+                    console.log(`Bye match auto-completed: ${nextMatch.team2.name} advances`);
+                    
+                    // Рекурсивно обновляем следующие матчи
+                    updateNextMatches(bracket, nextMatch, nextMatch.winner);
+                }
             }
         }
+        
+        console.log(`Updated next match ${nextMatch.id}: ${winner.name} added`);
+        
+    } catch (error) {
+        console.error('Error in updateNextMatches:', error);
+        // Продолжаем выполнение без обновления
     }
-    
-    return bracket;
 }
+
+// Старая функция renderBracket заменена на renderImprovedBracket
+
+
+// Старая функция createMatchElement заменена на createImprovedMatchElement
+
+
+// Старая функция setMatchWinner заменена на setImprovedMatchWinner
+
+
+// Старая функция createInitialBracket заменена на createImprovedBracket
+
+
+// Старые функции getRoundName и generateSchedule заменены на улучшенные версии
 
 
 function renderSchedule() {
@@ -1118,4 +1790,213 @@ function resetAllData() {
         
         alert('Все данные сброшены успешно!');
     }
+}
+
+// Функция для мониторинга производительности
+function monitorPerformance(operation, callback) {
+    const startTime = performance.now();
+    const startMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+    
+    try {
+        const result = callback();
+        const endTime = performance.now();
+        const endMemory = performance.memory ? performance.memory.usedJSHeapSize : 0;
+        
+        const duration = endTime - startTime;
+        const memoryUsed = endMemory - startMemory;
+        
+        console.log(`Performance: ${operation} completed in ${duration.toFixed(2)}ms`);
+        if (memoryUsed > 0) {
+            console.log(`Memory used: ${(memoryUsed / 1024 / 1024).toFixed(2)}MB`);
+        }
+        
+        return result;
+        
+    } catch (error) {
+        const endTime = performance.now();
+        console.error(`Performance: ${operation} failed after ${(endTime - startTime).toFixed(2)}ms`, error);
+        throw error;
+    }
+}
+
+// Функция для проверки здоровья системы
+function checkSystemHealth() {
+    try {
+        const health = {
+            localStorage: false,
+            memory: false,
+            performance: false,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Проверяем localStorage
+        try {
+            localStorage.setItem('health-check', 'test');
+            localStorage.removeItem('health-check');
+            health.localStorage = true;
+        } catch (error) {
+            console.warn('localStorage not available:', error);
+        }
+        
+        // Проверяем память
+        if (performance.memory) {
+            const memoryUsage = performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit;
+            health.memory = memoryUsage < 0.9; // Используется менее 90% памяти
+            console.log(`Memory usage: ${(memoryUsage * 100).toFixed(1)}%`);
+        } else {
+            health.memory = true; // Не можем проверить, считаем что все хорошо
+        }
+        
+        // Проверяем производительность
+        health.performance = performance.now() > 0;
+        
+        console.log('System health check:', health);
+        return health;
+        
+    } catch (error) {
+        console.error('Error checking system health:', error);
+        return { error: error.message, timestamp: new Date().toISOString() };
+    }
+}
+
+function showSystemHealth() {
+    try {
+        console.log('Checking system health...');
+        
+        const health = checkSystemHealth();
+        const stats = getSystemStats();
+        
+        let message = '=== ПРОВЕРКА СИСТЕМЫ ===\n\n';
+        
+        // Основные показатели
+        message += `✅ localStorage: ${health.localStorage ? 'Работает' : 'Не работает'}\n`;
+        message += `✅ Память: ${health.memory ? 'В норме' : 'Критично'}\n`;
+        message += `✅ Производительность: ${health.performance ? 'Работает' : 'Не работает'}\n\n`;
+        
+        // Статистика
+        message += `📊 Статистика:\n`;
+        message += `• Турниров: ${tournaments.length}\n`;
+        message += `• Команд: ${teams.length}\n`;
+        message += `• Сеток: ${bracketData ? '1' : '0'}\n`;
+        message += `• Расписаний: ${matchSchedule.length}\n\n`;
+        
+        // Рекомендации
+        message += `💡 Рекомендации:\n`;
+        if (!health.localStorage) {
+            message += `• Проверьте настройки браузера для localStorage\n`;
+        }
+        if (!health.memory) {
+            message += `• Закройте другие вкладки для освобождения памяти\n`;
+        }
+        if (tournaments.length > 100) {
+            message += `• Много турниров может замедлить работу\n`;
+        }
+        if (teams.length > 64) {
+            message += `• Большое количество команд может вызвать проблемы\n`;
+        }
+        
+        if (health.localStorage && health.memory && health.performance) {
+            message += `✅ Система работает нормально!`;
+        } else {
+            message += `⚠️ Обнаружены проблемы в системе`;
+        }
+        
+        // Показываем уведомление
+        showNotification(message, health.localStorage && health.memory && health.performance ? 'success' : 'error');
+        
+        // Дополнительно выводим в консоль
+        console.log('System Health Report:', health);
+        console.log('System Stats:', stats);
+        
+    } catch (error) {
+        console.error('Error showing system health:', error);
+        showNotification('Ошибка при проверке системы: ' + error.message, 'error');
+    }
+}
+
+function getSystemStats() {
+    try {
+        const stats = {
+            tournaments: tournaments.length,
+            teams: teams.length,
+            bracketData: !!bracketData,
+            matchSchedule: matchSchedule.length,
+            localStorage: {
+                tournaments: localStorage.getItem('volleyballTournaments') ? 'Есть' : 'Нет',
+                teams: localStorage.getItem('volleyballTeams') ? 'Есть' : 'Нет',
+                bracket: localStorage.getItem('volleyballBracket') ? 'Есть' : 'Нет',
+                schedule: localStorage.getItem('volleyballSchedule') ? 'Есть' : 'Нет'
+            },
+            memory: performance.memory ? {
+                used: `${(performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+                total: `${(performance.memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+                limit: `${(performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`,
+                usage: `${((performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) * 100).toFixed(1)}%`
+            } : 'Недоступно',
+            timestamp: new Date().toISOString()
+        };
+        
+        return stats;
+        
+    } catch (error) {
+        console.error('Error getting system stats:', error);
+        return { error: error.message, timestamp: new Date().toISOString() };
+    }
+}
+
+// Улучшенная функция для обработки критических ошибок
+function handleCriticalError(error, context) {
+    console.error(`Critical error in ${context}:`, error);
+    
+    // Показываем пользователю понятное сообщение об ошибке
+    const userMessage = getErrorMessage(error, context);
+    showNotification(userMessage, 'error');
+    
+    // Логируем ошибку для разработчиков
+    const errorLog = {
+        timestamp: new Date().toISOString(),
+        context: context,
+        error: error.message,
+        stack: error.stack,
+        userAgent: navigator.userAgent,
+        url: window.location.href
+    };
+    
+    console.error('Error log for developers:', errorLog);
+    
+    // В критических случаях предлагаем перезагрузить страницу
+    if (context === 'bracket-generation' || context === 'data-saving') {
+        setTimeout(() => {
+            if (confirm('Произошла критическая ошибка. Перезагрузить страницу?')) {
+                window.location.reload();
+            }
+        }, 2000);
+    }
+}
+
+// Функция для получения понятных пользователю сообщений об ошибках
+function getErrorMessage(error, context) {
+    const errorMessages = {
+        'bracket-generation': 'Ошибка при создании турнирной сетки',
+        'data-saving': 'Ошибка при сохранении данных',
+        'data-loading': 'Ошибка при загрузке данных',
+        'rendering': 'Ошибка при отображении интерфейса',
+        'schedule-generation': 'Ошибка при создании расписания'
+    };
+    
+    const baseMessage = errorMessages[context] || 'Произошла ошибка';
+    
+    if (error.message.includes('memory') || error.message.includes('Memory')) {
+        return `${baseMessage}: недостаточно памяти. Попробуйте закрыть другие вкладки или перезагрузить страницу.`;
+    }
+    
+    if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+        return `${baseMessage}: операция заняла слишком много времени. Попробуйте еще раз.`;
+    }
+    
+    if (error.message.includes('localStorage')) {
+        return `${baseMessage}: проблема с сохранением данных. Проверьте настройки браузера.`;
+    }
+    
+    return `${baseMessage}: ${error.message}`;
 }
