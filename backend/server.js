@@ -1,3 +1,8 @@
+// Загрузка переменных окружения из .env файла в режиме разработки
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+}
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -9,12 +14,34 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 
-app.use(cors());
+// Настройка CORS для разных окружений
+let corsOptions;
+if (process.env.NODE_ENV === 'production') {
+    // В продакшене разрешаем запросы только с определенных доменов
+    corsOptions = {
+        origin: [/\.render\.com$/, /localhost/],
+        optionsSuccessStatus: 200
+    };
+} else {
+    // В разработке разрешаем запросы со всех источников
+    corsOptions = {
+        origin: '*',
+        optionsSuccessStatus: 200
+    };
+}
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
+// Статические файлы
 app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Обработка маршрутов для SPA в продакшене
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 
 
 initDatabase().then(() => {
@@ -335,8 +362,8 @@ app.delete('/api/reset', async (req, res) => {
     }
 });
 
-
-app.get('/', (req, res) => {
+// Обработка всех остальных маршрутов для SPA
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 

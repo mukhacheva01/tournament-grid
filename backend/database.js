@@ -1,13 +1,19 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { ensureDataDirectory } = require('./ensure-data-dir');
+
+// Убедимся, что директория данных существует
+const dataDir = ensureDataDirectory();
+
+// Определяем путь к базе данных
+const dbPath = path.join(dataDir, 'tournament.db');
 
 // Создание подключения к базе данных
-const dbPath = path.join(__dirname, 'tournament.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Ошибка подключения к базе данных:', err.message);
     } else {
-        console.log('Подключение к SQLite базе данных установлено.');
+        console.log(`Подключение к SQLite базе данных установлено: ${dbPath}`);
     }
 });
 

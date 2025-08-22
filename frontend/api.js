@@ -1,6 +1,13 @@
 class TournamentAPI {
-    constructor(baseURL = 'http://localhost:3000/api') {
-        this.baseURL = baseURL;
+    constructor(baseURL = null) {
+        // Определяем базовый URL в зависимости от окружения
+        if (baseURL) {
+            this.baseURL = baseURL;
+        } else {
+            // В продакшене API находится на том же домене
+            const isProduction = window.location.hostname !== 'localhost';
+            this.baseURL = isProduction ? '/api' : 'http://localhost:3000/api';
+        }
     }
 
 
