@@ -18,6 +18,12 @@ COPY . .
 # Создаем директорию для данных
 RUN mkdir -p /data
 
+# Создаем директорию для статических файлов
+RUN mkdir -p /app/public
+
+# Копируем фронтенд в директорию public
+RUN cp -r frontend/* public/
+
 # Указываем порт
 EXPOSE 3000
 

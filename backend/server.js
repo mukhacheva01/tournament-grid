@@ -1,14 +1,14 @@
-// Загрузка переменных окружения из .env файла в режиме разработки
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-}
-
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const { initDatabase, tournamentQueries, teamQueries, matchQueries } = require('./database');
+
+// Загрузка переменных окружения из .env файла в режиме разработки
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,11 +36,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 // Статические файлы
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Обработка маршрутов для SPA в продакшене
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Обработка всех остальных маршрутов для SPA
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 
