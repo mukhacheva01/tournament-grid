@@ -18,18 +18,18 @@
 - Vanilla JavaScript
 - Font Awesome для иконок
 
-## Деплой на Render
+## Деплой на Render с Docker
 
-Проект настроен для деплоя на платформе Render.com. Для деплоя выполните следующие шаги:
+Проект настроен для деплоя на платформе Render.com с использованием Docker. Для деплоя выполните следующие шаги:
 
 1. Создайте аккаунт на [Render](https://render.com/)
 2. Подключите свой GitHub репозиторий
 3. Создайте новый Web Service
 4. Укажите следующие настройки:
    - **Name**: tournament-grid (или любое другое имя)
-   - **Environment**: Node
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
+   - **Environment**: Docker
+   - **Docker Build Context**: ./
+   - **Dockerfile Path**: ./Dockerfile
    - **Plan**: Free (или другой по вашему выбору)
 
 ### Переменные окружения
@@ -37,15 +37,29 @@
 Добавьте следующие переменные окружения в настройках Render:
 
 - `NODE_ENV`: `production`
-- `PORT`: `10000` (или другой порт, который предоставляет Render)
 
 ### Постоянное хранилище
 
-Для сохранения данных между деплоями, добавьте диск в настройках Render:
+Для сохранения данных между деплоями, в файле `render.yaml` уже настроен диск:
 
-1. Перейдите в раздел "Disks" в настройках вашего сервиса
-2. Добавьте новый диск с путем монтирования `/data`
-3. Выберите подходящий размер диска
+- **Путь монтирования**: `/data`
+- **Размер**: 1 GB
+
+### Локальная разработка с Docker
+
+Для локального запуска проекта с Docker:
+
+1. Установите [Docker](https://www.docker.com/)
+2. Соберите образ:
+   ```bash
+   docker build -t tournament-grid .
+   ```
+3. Запустите контейнер:
+   ```bash
+   docker run -p 3000:3000 -v $(pwd)/data:/data -e NODE_ENV=development tournament-grid
+   ```
+
+Приложение будет доступно по адресу http://localhost:3000
 
 ### Backend
 - Node.js
