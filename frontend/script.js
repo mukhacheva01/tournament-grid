@@ -227,7 +227,11 @@ function loadData() {
     // Если есть данные сетки, рендерим их
     if (bracketData) {
         console.log('Rendering existing bracket data...');
-        renderImprovedBracket();
+        if (bracketData.type === 'double-elimination') {
+            renderDoubleEliminationBracket();
+        } else {
+            renderImprovedBracket();
+        }
     }
 }
 
@@ -298,9 +302,13 @@ function toggleEditMode() {
         teamsInputSection.style.display = 'none';
     }
     
-    // Используем новую функцию рендеринга сетки
+    // Используем правильную функцию рендеринга в зависимости от типа турнира
     if (bracketData) {
-        renderImprovedBracket();
+        if (bracketData.type === 'double-elimination') {
+            renderDoubleEliminationBracket();
+        } else {
+            renderImprovedBracket();
+        }
     }
 }
 
@@ -874,10 +882,19 @@ function generateBracket() {
         
         console.log(`Generating bracket for ${teams.length} teams...`);
         
-        // Создаем улучшенную сетку с мониторингом производительности
-        const bracket = monitorPerformance('bracket-creation', () => {
-            return createImprovedBracket(teams);
+        // Определяем формат турнира
+        const tournamentFormat = currentTournament ? currentTournament.format : 'single-elimination';
+        console.log(`Tournament format: ${tournamentFormat}`);
+        
+        // Создаем сетку в зависимости от формата
+        const bracketResult = monitorPerformance('bracket-creation', () => {
+            if (tournamentFormat === 'double-elimination') {
+                return createDoubleEliminationBracket(teams);
+            } else {
+                return createImprovedBracket(teams);
+            }
         });
+        const bracket = bracketResult.result;
         
         if (!bracket) {
             console.error('Failed to create bracket');
@@ -890,13 +907,13 @@ function generateBracket() {
         console.log('Bracket created successfully, generating schedule...');
         
         // Генерируем расписание с мониторингом производительности
-        monitorPerformance('schedule-generation', () => {
+        const scheduleResult = monitorPerformance('schedule-generation', () => {
             generateImprovedSchedule(bracket);
         });
         
         // Сохраняем данные с мониторингом производительности
         console.log('Saving data...');
-        monitorPerformance('data-saving', () => {
+        const saveResult = monitorPerformance('data-saving', () => {
             saveData();
         });
         
@@ -916,13 +933,17 @@ function generateBracket() {
         
         // Рендерим сетку и расписание с мониторингом производительности
         console.log('Rendering bracket and schedule...');
-        const renderTime = monitorPerformance('bracket-rendering', () => {
-            renderImprovedBracket();
+        const renderResult = monitorPerformance('bracket-rendering', () => {
+            if (tournamentFormat === 'double-elimination') {
+                renderDoubleEliminationBracket();
+            } else {
+                renderImprovedBracket();
+            }
             renderSchedule();
         });
         
         // Показываем статистику
-        showBracketStats(bracket, renderTime);
+        showBracketStats(bracket, renderResult.duration);
         
         console.log('=== BRACKET GENERATION COMPLETED ===');
         
@@ -946,7 +967,7 @@ function showBracketStats(bracket, generationTime) {
             totalRounds: bracket.rounds.length,
             totalMatches: bracket.rounds.reduce((sum, round) => sum + round.matches.length, 0),
             byeMatches: bracket.rounds[0].matches.filter(match => match.isBye).length,
-            generationTime: generationTime.toFixed(2)
+            generationTime: (typeof generationTime === 'number' && !isNaN(generationTime)) ? generationTime.toFixed(2) : 'N/A'
         };
         
         console.log('Bracket Statistics:', stats);
@@ -1027,6 +1048,255 @@ function showNotification(message, type = 'info') {
         console.error('Error showing notification:', error);
         // Fallback к простому alert
         alert(message);
+    }
+}
+
+function createDoubleEliminationBracket(teams) {
+    try {
+        console.log('=== Creating double elimination bracket ===');
+        
+        // Проверяем входные данные
+        if (!Array.isArray(teams)) {
+            console.error('Teams must be an array');
+            throw new Error('Команды должны быть массивом');
+        }
+        
+        const teamCount = teams.length;
+        console.log(`Creating double elimination bracket for ${teamCount} teams`);
+        
+        // Ограничиваем максимальное количество команд
+        const MAX_TEAMS = 32; // Уменьшаем для более стабильной работы
+        if (teamCount > MAX_TEAMS) {
+            console.warn(`Too many teams (${teamCount}), limiting to ${MAX_TEAMS}`);
+            teams = teams.slice(0, MAX_TEAMS);
+        }
+        
+        if (teamCount < 2) {
+            throw new Error('Для создания сетки нужно минимум 2 команды');
+        }
+        
+        // Определяем количество раундов для winners bracket
+        const winnersRounds = Math.ceil(Math.log2(teamCount));
+        const totalSlots = Math.pow(2, winnersRounds);
+        
+        // Для losers bracket: (winnersRounds - 1) * 2, но минимум 1
+        const losersRounds = Math.max(1, (winnersRounds - 1) * 2);
+        
+        console.log(`Structure: ${winnersRounds} winners rounds, ${losersRounds} losers rounds, ${totalSlots} total slots`);
+        
+        console.log(`Double elimination structure: ${winnersRounds} winners rounds, ${losersRounds} losers rounds, ${totalSlots} total slots`);
+        
+        // Создаем массив с bye-командами если нужно
+        const teamsWithBye = [...teams];
+        while (teamsWithBye.length < totalSlots) {
+            teamsWithBye.push(null);
+        }
+        
+        // Создаем структуру double elimination bracket
+        const bracket = {
+            type: 'double-elimination',
+            winnersRounds: [],
+            losersRounds: [],
+            grandFinal: null,
+            totalTeams: teamCount,
+            totalSlots: totalSlots,
+            tournamentId: currentTournament ? currentTournament.id : null,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Создаем Winners Bracket
+        for (let i = 0; i < winnersRounds; i++) {
+            const matchCount = Math.pow(2, winnersRounds - i - 1);
+            const round = {
+                name: `Winners ${getImprovedRoundName(i, winnersRounds)}`,
+                matches: [],
+                roundNumber: i,
+                matchCount: matchCount,
+                bracket: 'winners'
+            };
+            
+            for (let j = 0; j < matchCount; j++) {
+                round.matches.push({
+                    id: `winners-round-${i}-match-${j}`,
+                    team1: null,
+                    team2: null,
+                    winner: null,
+                    loser: null,
+                    completed: false,
+                    isBye: false,
+                    score1: null,
+                    score2: null,
+                    nextMatchId: null,
+                    loserNextMatchId: null, // Куда идет проигравший
+                    position: j,
+                    roundIndex: i,
+                    bracket: 'winners'
+                });
+            }
+            
+            bracket.winnersRounds.push(round);
+        }
+        
+        // Создаем Losers Bracket
+        console.log('Creating losers bracket rounds...');
+        for (let i = 0; i < losersRounds; i++) {
+            let matchCount;
+            
+            // Исправленная логика для losers bracket
+            if (i === 0) {
+                // Первый раунд: проигравшие из первого раунда winners bracket
+                matchCount = Math.pow(2, winnersRounds - 2); // Половина от первого раунда winners
+            } else if (i % 2 === 1) {
+                // Нечетные раунды: объединение с проигравшими из winners bracket
+                const winnersRoundIndex = Math.floor((i + 1) / 2);
+                if (winnersRoundIndex < winnersRounds - 1) {
+                    // Количество матчей равно количеству проигравших из соответствующего раунда winners
+                    matchCount = Math.pow(2, winnersRounds - winnersRoundIndex - 2);
+                } else {
+                    matchCount = 1;
+                }
+            } else {
+                // Четные раунды: только победители из предыдущего раунда losers
+                const prevRoundIndex = i - 1;
+                if (prevRoundIndex >= 0 && bracket.losersRounds[prevRoundIndex]) {
+                    const prevMatches = bracket.losersRounds[prevRoundIndex].matches.length;
+                    matchCount = Math.max(1, Math.ceil(prevMatches / 2));
+                } else {
+                    matchCount = 1;
+                }
+            }
+            
+            // Убеждаемся, что количество матчей не меньше 1
+            matchCount = Math.max(1, matchCount);
+            
+            console.log(`Losers Round ${i + 1}: ${matchCount} matches (${i % 2 === 0 ? 'even' : 'odd'} round)`);
+            
+            const round = {
+                name: `Losers Round ${i + 1}`,
+                matches: [],
+                roundNumber: i,
+                matchCount: matchCount,
+                bracket: 'losers'
+            };
+            
+            for (let j = 0; j < matchCount; j++) {
+                round.matches.push({
+                    id: `losers-round-${i}-match-${j}`,
+                    team1: null,
+                    team2: null,
+                    winner: null,
+                    completed: false,
+                    isBye: false,
+                    score1: null,
+                    score2: null,
+                    nextMatchId: null,
+                    position: j,
+                    roundIndex: i,
+                    bracket: 'losers'
+                });
+            }
+            
+            bracket.losersRounds.push(round);
+        }
+        
+        // Создаем Grand Final
+        bracket.grandFinal = {
+            id: 'grand-final',
+            team1: null, // Победитель winners bracket
+            team2: null, // Победитель losers bracket
+            winner: null,
+            completed: false,
+            score1: null,
+            score2: null,
+            needsReset: false, // Флаг для определения необходимости reset match
+            resetMatch: {
+                id: 'grand-final-reset',
+                team1: null,
+                team2: null,
+                winner: null,
+                completed: false,
+                score1: null,
+                score2: null,
+                active: false // Активен ли reset match
+            }
+        };
+        
+        // Заполняем первый раунд winners bracket
+        const firstRound = bracket.winnersRounds[0];
+        const seededTeams = seedTeams(teamsWithBye, totalSlots);
+        
+        // Инициализируем счетчик поражений для всех команд
+        teams.forEach(team => {
+            if (team && typeof team === 'object') {
+                team.losses = 0;
+                team.eliminated = false;
+            }
+        });
+        
+        let matchIndex = 0;
+        for (let i = 0; i < seededTeams.length; i += 2) {
+            if (matchIndex < firstRound.matches.length) {
+                const match = firstRound.matches[matchIndex];
+                match.team1 = seededTeams[i];
+                match.team2 = seededTeams[i + 1];
+                
+                // Инициализируем счетчик поражений для команд в матче
+                if (match.team1 && typeof match.team1 === 'object') {
+                    match.team1.losses = match.team1.losses || 0;
+                    match.team1.eliminated = false;
+                }
+                if (match.team2 && typeof match.team2 === 'object') {
+                    match.team2.losses = match.team2.losses || 0;
+                    match.team2.eliminated = false;
+                }
+                
+                // Проверяем bye-матчи
+                if (match.team1 === null || match.team2 === null) {
+                    match.isBye = true;
+                    match.completed = true;
+                    
+                    let winner = null;
+                    let loser = null;
+                    
+                    if (match.team1 !== null) {
+                        match.winner = match.team1;
+                        match.score1 = 1;
+                        match.score2 = 0;
+                        winner = match.team1;
+                        // В bye-матче нет проигравшего
+                    } else if (match.team2 !== null) {
+                        match.winner = match.team2;
+                        match.score1 = 0;
+                        match.score2 = 1;
+                        winner = match.team2;
+                        // В bye-матче нет проигравшего
+                    }
+                    
+                    // Обновляем следующие матчи для bye-матчей
+                    if (winner) {
+                        // Для bye-матчей вызываем updateDoubleEliminationMatches без проигравшего
+                        try {
+                            updateDoubleEliminationMatches(bracket, match, winner, null);
+                        } catch (error) {
+                            console.warn('Error updating matches for bye:', error);
+                        }
+                    }
+                }
+                
+                matchIndex++;
+            }
+        }
+        
+        // Устанавливаем связи между матчами для double elimination
+        setupDoubleEliminationConnections(bracket);
+        
+        console.log('Double elimination bracket created successfully:', bracket);
+        return bracket;
+        
+    } catch (error) {
+        console.error('Error creating double elimination bracket:', error);
+        alert(`Ошибка при создании сетки double elimination: ${error.message}`);
+        return null;
     }
 }
 
@@ -1149,7 +1419,7 @@ function createImprovedBracket(teams) {
                     
                     // Обновляем следующие матчи с проверкой на ошибки
                     try {
-                        updateNextMatches(bracket, match, match.winner);
+                        updateDoubleEliminationMatches(bracket, match, match.winner, null);
                     } catch (error) {
                         console.error('Error updating next matches for bye:', error);
                         // Продолжаем выполнение, не прерывая создание сетки
@@ -1234,17 +1504,29 @@ function seedTeams(teams, totalSlots) {
         
         const seededTeams = new Array(totalSlots).fill(null);
         
-        // Улучшенный seeding алгоритм для больших турниров
+        // Улучшенный seeding алгоритм
         if (teams.length <= 8) {
-            // Для небольших турниров используем простое seeding
-            let topIndex = 0;
-            let bottomIndex = totalSlots - 1;
+            // Для небольших турниров используем правильное seeding
+            // Размещаем команды так, чтобы избежать bye-матчей в середине
+            let position = 0;
             
-            for (let i = 0; i < teams.length; i++) {
-                if (i % 2 === 0) {
-                    seededTeams[topIndex++] = teams[i];
-                } else {
-                    seededTeams[bottomIndex--] = teams[i];
+            // Сначала заполняем позиции парами
+            for (let i = 0; i < teams.length; i += 2) {
+                seededTeams[position] = teams[i];
+                if (i + 1 < teams.length) {
+                    seededTeams[position + 1] = teams[i + 1];
+                }
+                position += 2;
+            }
+            
+            // Если осталась одна команда без пары, размещаем её в следующую доступную позицию
+            if (teams.length % 2 === 1) {
+                // Находим первую пустую позицию после заполненных пар
+                for (let i = 0; i < totalSlots; i++) {
+                    if (seededTeams[i] === null) {
+                        seededTeams[i] = teams[teams.length - 1];
+                        break;
+                    }
                 }
             }
         } else {
@@ -1322,6 +1604,113 @@ function generateSeedOrder(teamCount, totalSlots) {
             simpleOrder.push(i);
         }
         return simpleOrder;
+    }
+}
+
+function setupDoubleEliminationConnections(bracket) {
+    try {
+        console.log('Setting up double elimination connections...');
+        
+        // Устанавливаем связи в Winners Bracket
+        for (let roundIndex = 0; roundIndex < bracket.winnersRounds.length - 1; roundIndex++) {
+            const currentRound = bracket.winnersRounds[roundIndex];
+            const nextRound = bracket.winnersRounds[roundIndex + 1];
+            
+            for (let matchIndex = 0; matchIndex < currentRound.matches.length; matchIndex++) {
+                const match = currentRound.matches[matchIndex];
+                const nextMatchIndex = Math.floor(matchIndex / 2);
+                
+                if (nextMatchIndex < nextRound.matches.length) {
+                    match.nextMatchId = nextRound.matches[nextMatchIndex].id;
+                }
+                
+                // Устанавливаем куда идет проигравший в losers bracket
+                if (roundIndex === 0) {
+                    // Из первого раунда winners bracket проигравшие идут в первый раунд losers bracket
+                    if (bracket.losersRounds.length > 0) {
+                        const loserRound = bracket.losersRounds[0];
+                        // Проигравшие из первого раунда winners bracket идут прямо в соответствующие позиции
+                        // Для 6 команд: матч 0 -> позиция 0, матч 1 -> позиция 1, матч 2 -> позиция 2 (если есть)
+                        let loserMatchIndex = matchIndex;
+                        
+                        // Если матчей в losers bracket меньше, размещаем в доступные позиции
+                        if (loserMatchIndex >= loserRound.matches.length) {
+                            loserMatchIndex = loserRound.matches.length - 1;
+                        }
+                        
+                        if (loserMatchIndex >= 0 && loserMatchIndex < loserRound.matches.length) {
+                            match.loserNextMatchId = loserRound.matches[loserMatchIndex].id;
+                            console.log(`Match ${match.id} loser goes to losers match ${loserRound.matches[loserMatchIndex].id}`);
+                        }
+                    }
+                } else {
+                    // Из остальных раундов winners bracket проигравшие попадают в соответствующие раунды losers bracket
+                    // Формула: проигравшие из раунда N winners bracket идут в раунд (2*N-2) losers bracket
+                    const loserRoundIndex = roundIndex * 2 - 2;
+                    if (loserRoundIndex >= 0 && loserRoundIndex < bracket.losersRounds.length) {
+                        const loserRound = bracket.losersRounds[loserRoundIndex];
+                        // Проигравшие встраиваются в соответствующие позиции в losers bracket
+                        // Для нечетных раундов losers bracket команды из winners bracket встраиваются между существующими
+                        let loserMatchIndex;
+                        if (loserRoundIndex % 2 === 1) {
+                            // Нечетный раунд losers bracket - встраиваем между существующими командами
+                            loserMatchIndex = matchIndex * 2;
+                        } else {
+                            // Четный раунд losers bracket - прямое соответствие
+                            loserMatchIndex = matchIndex;
+                        }
+                        
+                        if (loserMatchIndex < loserRound.matches.length) {
+                            match.loserNextMatchId = loserRound.matches[loserMatchIndex].id;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Устанавливаем связи в Losers Bracket
+        for (let roundIndex = 0; roundIndex < bracket.losersRounds.length - 1; roundIndex++) {
+            const currentRound = bracket.losersRounds[roundIndex];
+            const nextRound = bracket.losersRounds[roundIndex + 1];
+            
+            for (let matchIndex = 0; matchIndex < currentRound.matches.length; matchIndex++) {
+                const match = currentRound.matches[matchIndex];
+                
+                if (roundIndex % 2 === 0) {
+                    // Четный раунд - победители идут в следующий раунд
+                    if (matchIndex < nextRound.matches.length) {
+                        match.nextMatchId = nextRound.matches[matchIndex].id;
+                    }
+                } else {
+                    // Нечетный раунд - победители объединяются
+                    const nextMatchIndex = Math.floor(matchIndex / 2);
+                    if (nextMatchIndex < nextRound.matches.length) {
+                        match.nextMatchId = nextRound.matches[nextMatchIndex].id;
+                    }
+                }
+            }
+        }
+        
+        // Связываем финалы winners и losers bracket с grand final
+        if (bracket.winnersRounds.length > 0) {
+            const winnersFinal = bracket.winnersRounds[bracket.winnersRounds.length - 1];
+            if (winnersFinal.matches.length > 0) {
+                winnersFinal.matches[0].nextMatchId = 'grand-final';
+            }
+        }
+        
+        if (bracket.losersRounds.length > 0) {
+            const losersFinal = bracket.losersRounds[bracket.losersRounds.length - 1];
+            if (losersFinal.matches.length > 0) {
+                losersFinal.matches[0].nextMatchId = 'grand-final';
+            }
+        }
+        
+        console.log('Double elimination connections set up successfully');
+        
+    } catch (error) {
+        console.error('Error setting up double elimination connections:', error);
+        throw error;
     }
 }
 
@@ -1467,6 +1856,112 @@ function generateImprovedSchedule(bracket) {
         console.error('Error generating schedule:', error);
         matchSchedule = [];
         alert(`Ошибка при генерации расписания: ${error.message}`);
+    }
+}
+
+function renderDoubleEliminationBracket() {
+    try {
+        // Проверяем, что контейнер существует
+        if (!bracketContainer) {
+            console.error('bracketContainer не инициализирован');
+            return;
+        }
+        
+        if (!bracketData) {
+            bracketContainer.innerHTML = '<p>Турнирная сетка не сгенерирована</p>';
+            return;
+        }
+        
+        console.log('Rendering double elimination bracket...');
+        const startTime = performance.now();
+        
+        // Очищаем контейнер
+        bracketContainer.innerHTML = '';
+        
+        // Создаем контейнер для double elimination сетки
+        const bracketEl = document.createElement('div');
+        bracketEl.className = 'double-elimination-bracket';
+        
+        // Добавляем заголовок
+        const headerEl = document.createElement('div');
+        headerEl.className = 'bracket-header';
+        headerEl.innerHTML = `
+            <h2>Турнирная сетка Double Elimination</h2>
+            <div class="bracket-info">
+                <span>Команд: ${bracketData.totalTeams}</span>
+                <span>Winners Bracket: ${bracketData.winnersRounds.length} раундов</span>
+                <span>Losers Bracket: ${bracketData.losersRounds.length} раундов</span>
+            </div>
+        `;
+        bracketEl.appendChild(headerEl);
+        
+        // Создаем контейнер для двух веток
+        const bracketsContainer = document.createElement('div');
+        bracketsContainer.className = 'brackets-container';
+        
+        // Создаем Winners Bracket
+        const winnersSection = document.createElement('div');
+        winnersSection.className = 'winners-bracket-section';
+        winnersSection.innerHTML = '<h3 class="bracket-section-title">Winners Bracket</h3>';
+        
+        const winnersGrid = document.createElement('div');
+        winnersGrid.className = 'bracket-grid winners-grid';
+        
+        // Рендерим раунды Winners Bracket
+        bracketData.winnersRounds.forEach((round, roundIndex) => {
+            const roundEl = createDoubleEliminationRoundElement(round, roundIndex, 'winners');
+            winnersGrid.appendChild(roundEl);
+        });
+        
+        winnersSection.appendChild(winnersGrid);
+        bracketsContainer.appendChild(winnersSection);
+        
+        // Создаем Losers Bracket
+        const losersSection = document.createElement('div');
+        losersSection.className = 'losers-bracket-section';
+        losersSection.innerHTML = '<h3 class="bracket-section-title">Losers Bracket</h3>';
+        
+        const losersGrid = document.createElement('div');
+        losersGrid.className = 'bracket-grid losers-grid';
+        
+        // Рендерим раунды Losers Bracket
+        bracketData.losersRounds.forEach((round, roundIndex) => {
+            const roundEl = createDoubleEliminationRoundElement(round, roundIndex, 'losers');
+            losersGrid.appendChild(roundEl);
+        });
+        
+        losersSection.appendChild(losersGrid);
+        bracketsContainer.appendChild(losersSection);
+        
+        // Создаем Grand Final
+        if (bracketData.grandFinal) {
+            const grandFinalSection = document.createElement('div');
+            grandFinalSection.className = 'grand-final-section';
+            grandFinalSection.innerHTML = '<h3 class="bracket-section-title">Grand Final</h3>';
+            
+            const grandFinalEl = createDoubleEliminationMatchElement(bracketData.grandFinal, null, -1, 0, 'grand-final');
+            grandFinalSection.appendChild(grandFinalEl);
+            
+            // Добавляем Reset Match, если он активен
+            if (bracketData.grandFinal.resetMatch && bracketData.grandFinal.resetMatch.active) {
+                const resetMatchEl = createDoubleEliminationMatchElement(bracketData.grandFinal.resetMatch, null, -1, 1, 'reset-match');
+                grandFinalSection.appendChild(resetMatchEl);
+            }
+            
+            bracketsContainer.appendChild(grandFinalSection);
+        }
+        
+        bracketEl.appendChild(bracketsContainer);
+        bracketContainer.appendChild(bracketEl);
+        
+        const endTime = performance.now();
+        console.log(`Double elimination bracket rendered in ${(endTime - startTime).toFixed(2)}ms`);
+        
+    } catch (error) {
+        console.error('Error rendering double elimination bracket:', error);
+        if (bracketContainer) {
+            bracketContainer.innerHTML = `<p>Ошибка при отображении сетки: ${error.message}</p>`;
+        }
     }
 }
 
@@ -1659,6 +2154,125 @@ function setupLargeBracketControls(bracketEl) {
     }
 }
 
+function createDoubleEliminationRoundElement(round, roundIndex, bracketType) {
+    const roundEl = document.createElement('div');
+    roundEl.className = `bracket-round ${bracketType}-round`;
+    roundEl.dataset.round = roundIndex;
+    roundEl.dataset.bracketType = bracketType;
+    
+    // Заголовок раунда
+    const roundTitle = document.createElement('div');
+    roundTitle.className = 'round-title';
+    roundTitle.innerHTML = `
+        <h3>${round.name}</h3>
+        <span class="match-count">${round.matches.length} матч(ей)</span>
+    `;
+    roundEl.appendChild(roundTitle);
+    
+    // Контейнер для матчей
+    const matchesEl = document.createElement('div');
+    matchesEl.className = 'round-matches';
+    
+    // Рендерим матчи
+    round.matches.forEach((match, matchIndex) => {
+        const matchEl = createDoubleEliminationMatchElement(match, round, roundIndex, matchIndex, bracketType);
+        matchesEl.appendChild(matchEl);
+    });
+    
+    roundEl.appendChild(matchesEl);
+    return roundEl;
+}
+
+function createDoubleEliminationMatchElement(match, round, roundIndex, matchIndex, bracketType) {
+    const matchEl = document.createElement('div');
+    matchEl.className = `bracket-match ${bracketType}-match ${match.isBye ? 'bye-match' : ''} ${match.completed ? 'completed' : ''}`;
+    matchEl.dataset.matchId = match.id;
+    matchEl.dataset.bracketType = bracketType;
+    
+    // Получаем имена команд
+    let team1Name = match.team1 ? match.team1.name : 'TBD';
+    let team2Name = match.team2 ? match.team2.name : 'TBD';
+    
+    // Добавляем галочку победителю
+    if (match.completed && match.winner) {
+        if (match.winner.id === (match.team1?.id || null)) {
+            team1Name = `${team1Name} ✓`;
+        } else if (match.winner.id === (match.team2?.id || null)) {
+            team2Name = `${team2Name} ✓`;
+        }
+    }
+    
+    // Определяем тип матча для отображения
+    let matchTypeLabel = 'GF';
+    if (bracketType === 'winners') matchTypeLabel = 'W';
+    else if (bracketType === 'losers') matchTypeLabel = 'L';
+    else if (match.id === 'grand-final-reset') matchTypeLabel = 'RESET';
+    
+    // Создаем HTML для матча
+    matchEl.innerHTML = `
+        <div class="match-header">
+            <span class="match-number">#${matchIndex + 1}</span>
+            ${match.isBye ? '<span class="bye-label">BYE</span>' : ''}
+            <span class="bracket-type-label">${matchTypeLabel}</span>
+        </div>
+        <div class="match-teams">
+            <div class="match-team team1 ${match.winner && match.team1 && match.winner.id === match.team1.id ? 'winner' : ''}">
+                <span class="team-name">${team1Name}</span>
+                ${match.score1 !== null ? `<span class="team-score">${match.score1}</span>` : ''}
+            </div>
+            <div class="match-vs">VS</div>
+            <div class="match-team team2 ${match.winner && match.team2 && match.winner.id === match.team2.id ? 'winner' : ''}">
+                <span class="team-name">${team2Name}</span>
+                ${match.score2 !== null ? `<span class="team-score">${match.score2}</span>` : ''}
+            </div>
+        </div>
+        ${isEditMode && !match.completed && match.team1 && match.team2 && !match.isBye ? 
+            `<div class="match-actions">
+                <button class="select-winner-btn" data-winner="team1" data-match-id="${match.id}">${match.team1.name}</button>
+                <button class="select-winner-btn" data-winner="team2" data-match-id="${match.id}">${match.team2.name}</button>
+            </div>` : ''
+        }
+    `;
+    
+    // Добавляем обработчики событий для кнопок выбора победителя
+    if (isEditMode && !match.completed && match.team1 && match.team2 && !match.isBye) {
+        console.log(`DEBUG: Adding event listeners for match ${match.id} in ${bracketType} bracket`);
+        matchEl.querySelectorAll('.select-winner-btn').forEach(btn => {
+            console.log(`DEBUG: Adding listener to button:`, btn.textContent, btn.dataset);
+            btn.addEventListener('click', function(e) {
+                console.log(`DEBUG: Button clicked!`, this.textContent, this.dataset);
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const matchId = this.dataset.matchId;
+                const winnerType = this.dataset.winner;
+                
+                console.log(`DEBUG: Processing click - matchId: ${matchId}, winnerType: ${winnerType}`);
+                
+                // Находим актуальный матч в bracket
+                const currentMatch = findMatchInDoubleEliminationBracket(matchId, bracketData);
+                if (!currentMatch) {
+                    console.error('Match not found:', matchId);
+                    return;
+                }
+                
+                const winnerTeam = winnerType === 'team1' ? currentMatch.team1 : currentMatch.team2;
+                if (!winnerTeam) {
+                    console.error('Winner team not found:', winnerType);
+                    return;
+                }
+                
+                console.log(`DEBUG: Setting winner for match ${matchId}:`, winnerTeam.name);
+                setDoubleEliminationMatchWinner(currentMatch, winnerTeam);
+            });
+        });
+    } else {
+        console.log(`DEBUG: No event listeners added for match ${match.id}. isEditMode: ${isEditMode}, completed: ${match.completed}, team1: ${!!match.team1}, team2: ${!!match.team2}, isBye: ${match.isBye}`);
+    }
+    
+    return matchEl;
+}
+
 function createImprovedRoundElement(round, roundIndex) {
     const roundEl = document.createElement('div');
     roundEl.className = 'bracket-round';
@@ -1746,6 +2360,53 @@ function createImprovedMatchElement(match, round, roundIndex, matchIndex) {
     return matchEl;
 }
 
+function setDoubleEliminationMatchWinner(match, winner) {
+    try {
+        // Устанавливаем победителя
+        match.winner = winner;
+        match.completed = true;
+        
+        // Определяем проигравшего (проверяем на null)
+        let loser = null;
+        if (match.team1 && match.team2) {
+            loser = match.team1.id === winner.id ? match.team2 : match.team1;
+        }
+        
+        // Валидируем правила Double Elimination
+        const validationResult = validateDoubleEliminationRules(bracketData, match, winner, loser);
+        
+        if (validationResult === false) {
+            console.log('Match result violates Double Elimination rules');
+            return;
+        }
+        
+        if (validationResult === 'reset_needed') {
+            console.log('Grand Final reset needed - activating reset match');
+            // Логика активации reset match уже обрабатывается в handleGrandFinalResult
+        }
+        
+        if (validationResult === 'tournament_complete') {
+            console.log('Tournament completed');
+            showNotification(`Турнир завершен! Победитель: ${winner.name}`, 'success');
+        }
+        
+        // Обновляем следующие матчи
+        updateDoubleEliminationMatches(bracketData, match, winner, loser);
+        
+        // Перерендериваем сетку
+        renderDoubleEliminationBracket();
+        
+        // Сохраняем данные
+        saveData();
+        
+        console.log('Double elimination match winner set successfully');
+        
+    } catch (error) {
+        console.error('Error setting double elimination match winner:', error);
+        alert('Ошибка при установке победителя матча');
+    }
+}
+
 function setImprovedMatchWinner(match, winner) {
     match.winner = winner;
     match.completed = true;
@@ -1766,8 +2427,194 @@ function setImprovedMatchWinner(match, winner) {
     saveData();
     
     // Перерисовываем сетку и расписание
-    renderImprovedBracket();
+    if (bracketData && bracketData.type === 'double-elimination') {
+        renderDoubleEliminationBracket();
+    } else {
+        renderImprovedBracket();
+    }
     renderSchedule();
+}
+
+function handleGrandFinalResult(bracket, currentMatch, winner, loser) {
+    try {
+        console.log(`Handling Grand Final result: ${winner.name} beats ${loser.name}`);
+        
+        // Определяем, кто из какой сетки
+        const winnersChampion = bracket.grandFinal.team1; // Всегда из winners bracket
+        const losersChampion = bracket.grandFinal.team2; // Всегда из losers bracket
+        
+        if (winner.id === winnersChampion.id) {
+            // Команда из winners bracket выиграла - турнир окончен
+            bracket.grandFinal.winner = winner;
+            bracket.grandFinal.completed = true;
+            console.log(`Tournament winner: ${winner.name} (from winners bracket)`);
+        } else if (winner.id === losersChampion.id) {
+            // Команда из losers bracket выиграла - нужен reset match
+            bracket.grandFinal.needsReset = true;
+            bracket.grandFinal.resetMatch.active = true;
+            bracket.grandFinal.resetMatch.team1 = winnersChampion;
+            bracket.grandFinal.resetMatch.team2 = losersChampion;
+            console.log(`Reset match needed: ${winnersChampion.name} vs ${losersChampion.name}`);
+        }
+        
+    } catch (error) {
+        console.error('Error handling Grand Final result:', error);
+        throw error;
+    }
+}
+
+function updateDoubleEliminationMatches(bracket, currentMatch, winner, loser) {
+    try {
+        console.log(`Updating double elimination matches for match ${currentMatch.id}`);
+        
+        // Обновляем следующий матч для победителя
+        if (currentMatch.nextMatchId) {
+            const nextMatch = findMatchInDoubleEliminationBracket(currentMatch.nextMatchId, bracket);
+            if (nextMatch) {
+                // Определяем позицию команды в следующем матче
+                if (!nextMatch.team1) {
+                    nextMatch.team1 = winner;
+                    console.log(`Winner ${winner.name} placed in team1 of match ${nextMatch.id}`);
+                } else if (!nextMatch.team2) {
+                    nextMatch.team2 = winner;
+                    console.log(`Winner ${winner.name} placed in team2 of match ${nextMatch.id}`);
+                }
+            }
+        }
+        
+        // Обновляем следующий матч для проигравшего
+        if (loser) {
+            if (currentMatch.loserNextMatchId) {
+                const loserNextMatch = findMatchInDoubleEliminationBracket(currentMatch.loserNextMatchId, bracket);
+                if (loserNextMatch) {
+                    // Определяем позицию команды в следующем матче
+                    if (!loserNextMatch.team1) {
+                        loserNextMatch.team1 = loser;
+                        console.log(`Loser ${loser.name} placed in team1 of match ${loserNextMatch.id}`);
+                    } else if (!loserNextMatch.team2) {
+                        loserNextMatch.team2 = loser;
+                        console.log(`Loser ${loser.name} placed in team2 of match ${loserNextMatch.id}`);
+                    }
+                } else {
+                    console.warn(`Loser next match ${currentMatch.loserNextMatchId} not found for loser ${loser.name}`);
+                }
+            } else {
+                // Если нет loserNextMatchId, команда исключается из турнира
+                loser.eliminated = true;
+                console.log(`Loser ${loser.name} eliminated from tournament (no loser bracket path)`);
+            }
+        }
+        
+        // Обрабатываем Grand Final
+        if (currentMatch.nextMatchId === 'grand-final' && bracket.grandFinal) {
+            if (!bracket.grandFinal.team1) {
+                bracket.grandFinal.team1 = winner;
+                console.log(`Winner ${winner.name} placed in Grand Final team1`);
+            } else if (!bracket.grandFinal.team2) {
+                bracket.grandFinal.team2 = winner;
+                console.log(`Winner ${winner.name} placed in Grand Final team2`);
+            }
+        }
+        
+        // Обрабатываем результат Grand Final
+        if (currentMatch.id === 'grand-final' && bracket.grandFinal) {
+            handleGrandFinalResult(bracket, currentMatch, winner, loser);
+        }
+        
+        // Обрабатываем результат Reset Match
+        if (currentMatch.id === 'grand-final-reset' && bracket.grandFinal && bracket.grandFinal.resetMatch) {
+            bracket.grandFinal.resetMatch.winner = winner;
+            bracket.grandFinal.resetMatch.completed = true;
+            bracket.grandFinal.winner = winner; // Окончательный победитель турнира
+            bracket.grandFinal.completed = true;
+            console.log(`Tournament winner: ${winner.name}`);
+        }
+        
+        console.log('Double elimination matches updated successfully');
+        
+    } catch (error) {
+        console.error('Error updating double elimination matches:', error);
+        throw error;
+    }
+}
+
+function validateDoubleEliminationRules(bracket, currentMatch, winner, loser) {
+    try {
+        // Проверяем, что команда не проиграла больше одного раза
+        if (loser && loser.losses !== undefined) {
+            if (loser.losses >= 1) {
+                console.log(`Team ${loser.name} is eliminated after second loss`);
+                loser.eliminated = true;
+                return false; // Команда исключена
+            } else {
+                loser.losses = (loser.losses || 0) + 1;
+                console.log(`Team ${loser.name} now has ${loser.losses} loss(es)`);
+            }
+        }
+        
+        // Инициализируем счетчик поражений для команд, если он не существует
+        if (winner && winner.losses === undefined) {
+            winner.losses = 0;
+        }
+        if (loser && loser.losses === undefined) {
+            loser.losses = 1;
+        }
+        
+        // Проверяем правила Grand Final
+        if (currentMatch.id === 'grand-final') {
+            // В Grand Final команда из losers bracket должна выиграть дважды
+            if (bracket.grandFinal.team1 && bracket.grandFinal.team2) {
+                const winnersTeam = bracket.grandFinal.team1.losses === 0 ? bracket.grandFinal.team1 : bracket.grandFinal.team2;
+                const losersTeam = bracket.grandFinal.team1.losses > 0 ? bracket.grandFinal.team1 : bracket.grandFinal.team2;
+                
+                if (winner === losersTeam && !bracket.grandFinal.needsReset) {
+                    console.log(`Team from losers bracket ${winner.name} won first Grand Final match - reset needed`);
+                    return 'reset_needed';
+                } else if (winner === winnersTeam) {
+                    console.log(`Team from winners bracket ${winner.name} won Grand Final - tournament over`);
+                    return 'tournament_complete';
+                }
+            }
+        }
+        
+        return true; // Валидация прошла успешно
+        
+    } catch (error) {
+        console.error('Error validating double elimination rules:', error);
+        return false;
+    }
+}
+
+function findMatchInDoubleEliminationBracket(matchId, bracket) {
+    // Ищем в Winners Bracket
+    for (const round of bracket.winnersRounds) {
+        for (const match of round.matches) {
+            if (match.id === matchId) {
+                return match;
+            }
+        }
+    }
+    
+    // Ищем в Losers Bracket
+    for (const round of bracket.losersRounds) {
+        for (const match of round.matches) {
+            if (match.id === matchId) {
+                return match;
+            }
+        }
+    }
+    
+    // Проверяем Grand Final
+    if (bracket.grandFinal && bracket.grandFinal.id === matchId) {
+        return bracket.grandFinal;
+    }
+    
+    // Проверяем Reset Match в Grand Final
+    if (bracket.grandFinal && bracket.grandFinal.resetMatch && bracket.grandFinal.resetMatch.id === matchId) {
+        return bracket.grandFinal.resetMatch;
+    }
+    
+    return null;
 }
 
 function updateNextMatches(bracket, currentMatch, winner) {
@@ -2030,11 +2877,17 @@ function monitorPerformance(operation, callback) {
             console.log(`Memory used: ${(memoryUsed / 1024 / 1024).toFixed(2)}MB`);
         }
         
-        return result;
+        // Возвращаем объект с результатом и временем выполнения
+        return {
+            result: result,
+            duration: duration,
+            memoryUsed: memoryUsed
+        };
         
     } catch (error) {
         const endTime = performance.now();
-        console.error(`Performance: ${operation} failed after ${(endTime - startTime).toFixed(2)}ms`, error);
+        const duration = endTime - startTime;
+        console.error(`Performance: ${operation} failed after ${duration.toFixed(2)}ms`, error);
         throw error;
     }
 }

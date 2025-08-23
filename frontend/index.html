@@ -22,6 +22,7 @@
                 <ul>
                     <li><a href="#" class="active" data-section="tournaments-list">Турниры</a></li>
                     <li><a href="#" data-section="tournament-bracket-section">Турнирная сетка</a></li>
+                    <li><a href="#" data-section="schedule-section">Расписание</a></li>
                 </ul>
             </nav>
         </div>
@@ -101,6 +102,27 @@
                         <li>🏆 Победитель матча</li>
                         <li>⚪ Участник</li>
                     </ul>
+                </div>
+            </div>
+            
+            <div id="schedule-section" class="section">
+                <h2>Расписание матчей</h2>
+                <div class="schedule-content">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Корт</th>
+                                <th>Команда 1</th>
+                                <th>Команда 2</th>
+                                <th>Раунд</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-body">
+                            <!-- Расписание будет добавляться динамически -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
             
