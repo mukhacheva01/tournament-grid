@@ -5,39 +5,81 @@ let bracketData = null;
 let isEditMode = false;
 let matchSchedule = [];
 
-
-const tournamentsContainer = document.getElementById('tournaments-container');
-const participantsCount = document.getElementById('participants-count');
-const seededCount = document.getElementById('seeded-count');  
-const tournamentDate = document.getElementById('tournament-date');
-const toggleEditBtn = document.getElementById('toggle-edit-btn');
-const teamsInputSection = document.getElementById('teams-input-section');
-const teamsList = document.getElementById('teams-list');
-const addTeamInputBtn = document.getElementById('add-team-input-btn');
-const saveTeamsBtn = document.getElementById('save-teams-btn');
-const bracketContainer = document.getElementById('bracket-container');
-const scheduleBody = document.getElementById('schedule-body');
-const createTournamentBtn = document.getElementById('create-tournament-btn');
-const generateBracketBtn = document.getElementById('generate-bracket-btn');
-const tournamentModal = document.getElementById('tournament-modal');
-const closeModalBtn = document.querySelector('.close');
-const tournamentForm = document.getElementById('tournament-form');
+// DOM элементы будут инициализированы после загрузки страницы
+let tournamentsContainer;
+let participantsCount;
+let seededCount;
+let tournamentDate;
+let toggleEditBtn;
+let teamsInputSection;
+let teamsList;
+let addTeamInputBtn;
+let saveTeamsBtn;
+let bracketContainer;
+let scheduleBody;
+let createTournamentBtn;
+let generateBracketBtn;
+let tournamentModal;
+let closeModalBtn;
+let tournamentForm;
 
 
 document.addEventListener('DOMContentLoaded', function() {
-
+    // Инициализируем DOM элементы
+    initializeDOMElements();
+    
+    // Загружаем данные
     loadData();
     
-
+    // Настраиваем обработчики событий
     setupEventListeners();
     
-
+    // Рендерим турниры
     renderTournaments();
+    
+    // Обновляем информацию о турнире
     updateTournamentInfo();
 });
 
+// Функция для инициализации DOM элементов
+function initializeDOMElements() {
+    tournamentsContainer = document.getElementById('tournaments-container');
+    participantsCount = document.getElementById('participants-count');
+    seededCount = document.getElementById('seeded-count');  
+    tournamentDate = document.getElementById('tournament-date');
+    toggleEditBtn = document.getElementById('toggle-edit-btn');
+    teamsInputSection = document.getElementById('teams-input-section');
+    teamsList = document.getElementById('teams-list');
+    addTeamInputBtn = document.getElementById('add-team-input-btn');
+    saveTeamsBtn = document.getElementById('save-teams-btn');
+    bracketContainer = document.getElementById('bracket-container');
+    scheduleBody = document.getElementById('schedule-body');
+    createTournamentBtn = document.getElementById('create-tournament-btn');
+    generateBracketBtn = document.getElementById('generate-bracket-btn');
+    tournamentModal = document.getElementById('tournament-modal');
+    closeModalBtn = document.querySelector('.close');
+    tournamentForm = document.getElementById('tournament-form');
+    
+    // Проверяем, что все необходимые элементы найдены
+    if (!bracketContainer) {
+        console.error('bracketContainer не найден!');
+    }
+    if (!tournamentsContainer) {
+        console.error('tournamentsContainer не найден!');
+    }
+    if (!scheduleBody) {
+        console.error('scheduleBody не найден!');
+    }
+}
+
 
 function setupEventListeners() {
+    // Проверяем, что все необходимые элементы существуют
+    if (!toggleEditBtn || !addTeamInputBtn || !saveTeamsBtn || !createTournamentBtn || 
+        !closeModalBtn || !tournamentForm || !generateBracketBtn) {
+        console.error('Не все необходимые элементы найдены в setupEventListeners');
+        return;
+    }
 
     document.querySelectorAll('.main-nav a').forEach(link => {
         link.addEventListener('click', function(e) {
@@ -217,14 +259,34 @@ function saveData() {
 
 
 function showSection(sectionId) {
+    // Проверяем, что sectionId передан
+    if (!sectionId) {
+        console.error('sectionId не передан в showSection');
+        return;
+    }
+    
+    // Убираем активный класс со всех секций
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
-    document.getElementById(sectionId).classList.add('active');
+    
+    // Добавляем активный класс к нужной секции
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    } else {
+        console.error(`Секция с id "${sectionId}" не найдена`);
+    }
 }
 
 
 function toggleEditMode() {
+    // Проверяем, что необходимые элементы существуют
+    if (!toggleEditBtn || !teamsInputSection) {
+        console.error('Необходимые элементы не инициализированы в toggleEditMode');
+        return;
+    }
+    
     isEditMode = !isEditMode;
     
     if (isEditMode) {
@@ -244,6 +306,12 @@ function toggleEditMode() {
 
 
 function addTeamInputField() {
+    // Проверяем, что teamsList существует
+    if (!teamsList) {
+        console.error('teamsList не инициализирован');
+        return;
+    }
+    
     const teamInput = document.createElement('div');
     teamInput.className = 'team-input';
     teamInput.innerHTML = `
@@ -260,6 +328,12 @@ function addTeamInputField() {
 
 
 function renderTeamInputs() {
+    // Проверяем, что teamsList существует
+    if (!teamsList) {
+        console.error('teamsList не инициализирован');
+        return;
+    }
+    
     teamsList.innerHTML = '';
     
     teams.forEach((team, index) => {
@@ -286,6 +360,12 @@ function renderTeamInputs() {
 
 
 function saveTeams() {
+    // Проверяем, что teamsList существует
+    if (!teamsList) {
+        console.error('teamsList не инициализирован');
+        return;
+    }
+    
     const teamInputs = document.querySelectorAll('.team-name-input');
     const newTeams = [];
     
@@ -303,12 +383,18 @@ function saveTeams() {
     saveData();
     alert('Команды сохранены!');
     
-
+    // Обновляем информацию о турнире
     updateTournamentInfo();
 }
 
 
 function updateTournamentInfo() {
+    // Проверяем, что необходимые элементы существуют
+    if (!participantsCount || !seededCount || !tournamentDate) {
+        console.error('Необходимые элементы не инициализированы в updateTournamentInfo');
+        return;
+    }
+    
     participantsCount.textContent = teams.length;
     seededCount.textContent = Math.min(4, teams.length);
     
@@ -325,47 +411,92 @@ function formatDate(dateString) {
 
 
 function showTournamentModal() {
-    document.getElementById('tournament-modal-title').textContent = 'Создать турнир';
-    document.getElementById('tournament-form').dataset.id = '';
-    document.getElementById('tournament-form').reset();
+    // Проверяем, что все необходимые элементы существуют
+    const modalTitle = document.getElementById('tournament-modal-title');
+    const form = document.getElementById('tournament-form');
+    const timeInput = document.getElementById('tournament-time');
+    const cityInput = document.getElementById('tournament-city');
+    
+    if (!modalTitle || !form || !timeInput || !cityInput || !tournamentModal) {
+        console.error('Не все элементы модального окна найдены');
+        return;
+    }
+    
+    modalTitle.textContent = 'Создать турнир';
+    form.dataset.id = '';
+    form.reset();
     
     // Set default values
-    document.getElementById('tournament-time').value = '10:00';
-    document.getElementById('tournament-city').value = 'Москва';
+    timeInput.value = '10:00';
+    cityInput.value = 'Москва';
     
     // Set default radio button selections
-    document.querySelector('input[name="tournament-format"][value="double-elimination"]').checked = true;
-    document.querySelector('input[name="game-type"][value="beach-2x2"]').checked = true;
-    document.querySelector('input[name="gender-mix"][value="men"]').checked = true;
-    document.querySelector('input[name="restrictions"][value="no-restrictions"]').checked = true;
-    document.querySelector('input[name="application-collection"][value="yes"]').checked = true;
+    const formatRadio = document.querySelector('input[name="tournament-format"][value="double-elimination"]');
+    const gameTypeRadio = document.querySelector('input[name="game-type"][value="beach-2x2"]');
+    const genderMixRadio = document.querySelector('input[name="gender-mix"][value="men"]');
+    const restrictionsRadio = document.querySelector('input[name="restrictions"][value="no-restrictions"]');
+    const applicationCollectionRadio = document.querySelector('input[name="application-collection"][value="yes"]');
+    
+    if (formatRadio) formatRadio.checked = true;
+    if (gameTypeRadio) gameTypeRadio.checked = true;
+    if (genderMixRadio) genderMixRadio.checked = true;
+    if (restrictionsRadio) restrictionsRadio.checked = true;
+    if (applicationCollectionRadio) applicationCollectionRadio.checked = true;
     
     tournamentModal.style.display = 'block';
 }
 
 
 function closeTournamentModal() {
+    // Проверяем, что необходимые элементы существуют
+    if (!tournamentModal || !tournamentForm) {
+        console.error('Не все элементы модального окна найдены в closeTournamentModal');
+        return;
+    }
+    
     tournamentModal.style.display = 'none';
     tournamentForm.reset();
 }
 
 // Quick fill function for testing
 function quickFillForm() {
-    document.getElementById('tournament-name').value = 'Тестовый турнир';
-    document.getElementById('tournament-date-input').value = '2025-08-22';
-    document.getElementById('tournament-time').value = '10:00';
-    document.getElementById('tournament-location').value = 'Спортивный комплекс';
-    document.getElementById('tournament-city').value = 'Москва';
-    document.getElementById('organizer-number').value = 'ORG001';
-    document.getElementById('organizer-password').value = 'test123';
-    document.getElementById('tournament-regulations').value = 'Дата и время окончания регистрации - 20.08.2025\nМесто проведения - Спортивный комплекс\nТип турнира (муж, жен, микс) - Мужской\nОграничения по участникам (возраст, территория..) - Без ограничений\nВзнос - Бесплатно\nОрганизатор - Тестовая организация\nКонтакты организатора - +7(999)123-45-67';
+    // Проверяем, что все необходимые элементы существуют
+    const nameInput = document.getElementById('tournament-name');
+    const dateInput = document.getElementById('tournament-date-input');
+    const timeInput = document.getElementById('tournament-time');
+    const locationInput = document.getElementById('tournament-location');
+    const cityInput = document.getElementById('tournament-city');
+    const organizerNumberInput = document.getElementById('organizer-number');
+    const organizerPasswordInput = document.getElementById('organizer-password');
+    const regulationsInput = document.getElementById('tournament-regulations');
+    
+    if (!nameInput || !dateInput || !timeInput || !locationInput || !cityInput || 
+        !organizerNumberInput || !organizerPasswordInput || !regulationsInput) {
+        console.error('Не все элементы формы найдены в quickFillForm');
+        return;
+    }
+    
+    nameInput.value = 'Тестовый турнир';
+    dateInput.value = '2025-08-22';
+    timeInput.value = '10:00';
+    locationInput.value = 'Спортивный комплекс';
+    cityInput.value = 'Москва';
+    organizerNumberInput.value = 'ORG001';
+    organizerPasswordInput.value = 'test123';
+    regulationsInput.value = 'Дата и время окончания регистрации - 20.08.2025\nМесто проведения - Спортивный комплекс\nТип турнира (муж, жен, микс) - Мужской\nОграничения по участникам (возраст, территория..) - Без ограничений\nВзнос - Бесплатно\nОрганизатор - Тестовая организация\nКонтакты организатора - +7(999)123-45-67';
     
     // Set radio button values
-    document.querySelector('input[name="tournament-format"][value="double-elimination"]').checked = true;
-    document.querySelector('input[name="game-type"][value="beach-2x2"]').checked = true;
-    document.querySelector('input[name="gender-mix"][value="men"]').checked = true;
-    document.querySelector('input[name="restrictions"][value="no-restrictions"]').checked = true;
-    document.querySelector('input[name="application-collection"][value="yes"]').checked = true;
+    const formatRadio = document.querySelector('input[name="tournament-format"][value="double-elimination"]');
+    const gameTypeRadio = document.querySelector('input[name="game-type"][value="beach-2x2"]');
+    const genderMixRadio = document.querySelector('input[name="gender-mix"][value="men"]');
+    const restrictionsRadio = document.querySelector('input[name="restrictions"][value="no-restrictions"]');
+    const applicationCollectionRadio = document.querySelector('input[name="application-collection"][value="yes"]');
+    
+    if (formatRadio) formatRadio.checked = true;
+    if (gameTypeRadio) gameTypeRadio.checked = true;
+    if (genderMixRadio) genderMixRadio.checked = true;
+    if (restrictionsRadio) restrictionsRadio.checked = true;
+    if (applicationCollectionRadio) applicationCollectionRadio.checked = true;
 }
 
 
@@ -374,11 +505,27 @@ function handleTournamentSubmit(e) {
     
     console.log('Form submitted, processing tournament data...');
     
-    const name = document.getElementById('tournament-name').value;
-    const date = document.getElementById('tournament-date-input').value;
-    const time = document.getElementById('tournament-time').value;
-    const location = document.getElementById('tournament-location').value;
-    const city = document.getElementById('tournament-city').value;
+    // Проверяем, что все необходимые элементы существуют
+    const nameInput = document.getElementById('tournament-name');
+    const dateInput = document.getElementById('tournament-date-input');
+    const timeInput = document.getElementById('tournament-time');
+    const locationInput = document.getElementById('tournament-location');
+    const cityInput = document.getElementById('tournament-city');
+    const organizerNumberInput = document.getElementById('organizer-number');
+    const organizerPasswordInput = document.getElementById('organizer-password');
+    const regulationsInput = document.getElementById('tournament-regulations');
+    
+    if (!nameInput || !dateInput || !timeInput || !locationInput || !cityInput || 
+        !organizerNumberInput || !organizerPasswordInput || !regulationsInput) {
+        console.error('Не все элементы формы найдены в handleTournamentSubmit');
+        return;
+    }
+    
+    const name = nameInput.value;
+    const date = dateInput.value;
+    const time = timeInput.value;
+    const location = locationInput.value;
+    const city = cityInput.value;
     
     // Get radio button values
     const format = document.querySelector('input[name="tournament-format"]:checked')?.value;
@@ -388,9 +535,9 @@ function handleTournamentSubmit(e) {
     const applicationCollection = document.querySelector('input[name="application-collection"]:checked')?.value;
     
     // Get additional fields
-    const organizerNumber = document.getElementById('organizer-number').value;
-    const organizerPassword = document.getElementById('organizer-password').value;
-    const regulations = document.getElementById('tournament-regulations').value;
+    const organizerNumber = organizerNumberInput.value;
+    const organizerPassword = organizerPasswordInput.value;
+    const regulations = regulationsInput.value;
     
     console.log('Tournament data collected:', {
         name, date, time, location, city, format, gameType, genderMix, restrictions, applicationCollection
@@ -505,6 +652,12 @@ function getRestrictionsDisplayName(restrictions) {
 }
 
 function renderTournaments() {
+    // Проверяем, что контейнер существует
+    if (!tournamentsContainer) {
+        console.error('tournamentsContainer не инициализирован');
+        return;
+    }
+    
     console.log('Rendering tournaments...');
     console.log('Tournaments array:', tournaments);
     console.log('Tournaments container:', tournamentsContainer);
@@ -585,15 +738,31 @@ function renderTournaments() {
 function editTournament(id) {
     const tournamentToEdit = tournaments.find(t => t.id === id);
     if (tournamentToEdit) {
+        // Проверяем, что все необходимые элементы формы существуют
+        const nameInput = document.getElementById('tournament-name');
+        const dateInput = document.getElementById('tournament-date-input');
+        const timeInput = document.getElementById('tournament-time');
+        const locationInput = document.getElementById('tournament-location');
+        const cityInput = document.getElementById('tournament-city');
+        const organizerNumberInput = document.getElementById('organizer-number');
+        const organizerPasswordInput = document.getElementById('organizer-password');
+        const regulationsInput = document.getElementById('tournament-regulations');
+        
+        if (!nameInput || !dateInput || !timeInput || !locationInput || !cityInput || 
+            !organizerNumberInput || !organizerPasswordInput || !regulationsInput) {
+            console.error('Не все элементы формы найдены');
+            return;
+        }
+        
         // Fill form fields
-        document.getElementById('tournament-name').value = tournamentToEdit.name;
-        document.getElementById('tournament-date-input').value = tournamentToEdit.date;
-        document.getElementById('tournament-time').value = tournamentToEdit.time || '10:00';
-        document.getElementById('tournament-location').value = tournamentToEdit.location;
-        document.getElementById('tournament-city').value = tournamentToEdit.city || 'Москва';
-        document.getElementById('organizer-number').value = tournamentToEdit.organizerNumber || '';
-        document.getElementById('organizer-password').value = tournamentToEdit.organizerPassword || '';
-        document.getElementById('tournament-regulations').value = tournamentToEdit.regulations || '';
+        nameInput.value = tournamentToEdit.name;
+        dateInput.value = tournamentToEdit.date;
+        timeInput.value = tournamentToEdit.time || '10:00';
+        locationInput.value = tournamentToEdit.location;
+        cityInput.value = tournamentToEdit.city || 'Москва';
+        organizerNumberInput.value = tournamentToEdit.organizerNumber || '';
+        organizerPasswordInput.value = tournamentToEdit.organizerPassword || '';
+        regulationsInput.value = tournamentToEdit.regulations || '';
         
         // Set radio button values
         if (tournamentToEdit.format) {
@@ -630,8 +799,14 @@ function deleteTournament(id) {
             teams = [];
             matchSchedule = [];
             updateTournamentInfo();
-            renderBracket();
-            renderSchedule();
+            
+            // Проверяем, что функции существуют перед вызовом
+            if (typeof renderBracket === 'function') {
+                renderBracket();
+            }
+            if (typeof renderSchedule === 'function') {
+                renderSchedule();
+            }
         }
         alert('Турнир удален.');
     }
@@ -649,11 +824,21 @@ function viewTournamentBracket(id) {
         document.querySelector('[data-section="tournament-bracket-section"]').classList.add('active');
         
         if (bracketData && currentTournament.id === bracketData.tournamentId) {
-            renderBracket();
-            renderSchedule();
+            // Проверяем, что функции существуют перед вызовом
+            if (typeof renderBracket === 'function') {
+                renderBracket();
+            }
+            if (typeof renderSchedule === 'function') {
+                renderSchedule();
+            }
         } else {
-            bracketContainer.innerHTML = '<p>Сетка для этого турнира не сгенерирована. Пожалуйста, сгенерируйте ее.</p>';
-            scheduleBody.innerHTML = '<tr><td colspan="6">Расписание матчей не сгенерировано</td></tr>';
+            // Проверяем, что контейнеры существуют
+            if (bracketContainer) {
+                bracketContainer.innerHTML = '<p>Сетка для этого турнира не сгенерирована. Пожалуйста, сгенерируйте ее.</p>';
+            }
+            if (scheduleBody) {
+                scheduleBody.innerHTML = '<tr><td colspan="6">Расписание матчей не сгенерировано</td></tr>';
+            }
         }
     }
 }
@@ -717,8 +902,17 @@ function generateBracket() {
         
         // Показываем секцию с сеткой
         showSection('tournament-bracket-section');
-        document.querySelector('[data-section="tournament-bracket-section"]').classList.add('active');
-        document.querySelector('[data-section="tournaments-list"]').classList.remove('active');
+        
+        // Проверяем, что элементы навигации существуют
+        const bracketSection = document.querySelector('[data-section="tournament-bracket-section"]');
+        const tournamentsListSection = document.querySelector('[data-section="tournaments-list"]');
+        
+        if (bracketSection) {
+            bracketSection.classList.add('active');
+        }
+        if (tournamentsListSection) {
+            tournamentsListSection.classList.remove('active');
+        }
         
         // Рендерим сетку и расписание с мониторингом производительности
         console.log('Rendering bracket and schedule...');
@@ -1278,6 +1472,12 @@ function generateImprovedSchedule(bracket) {
 
 function renderImprovedBracket() {
     try {
+        // Проверяем, что контейнер существует
+        if (!bracketContainer) {
+            console.error('bracketContainer не инициализирован');
+            return;
+        }
+        
         if (!bracketData) {
             bracketContainer.innerHTML = '<p>Турнирная сетка не сгенерирована</p>';
             return;
@@ -1306,11 +1506,19 @@ function renderImprovedBracket() {
         
     } catch (error) {
         console.error('Error rendering bracket:', error);
-        bracketContainer.innerHTML = `<p>Ошибка при отображении сетки: ${error.message}</p>`;
+        if (bracketContainer) {
+            bracketContainer.innerHTML = `<p>Ошибка при отображении сетки: ${error.message}</p>`;
+        }
     }
 }
 
 function renderStandardBracket() {
+    // Проверяем, что контейнер существует
+    if (!bracketContainer) {
+        console.error('bracketContainer не инициализирован в renderStandardBracket');
+        return;
+    }
+    
     // Создаем контейнер для сетки
     const bracketEl = document.createElement('div');
     bracketEl.className = 'improved-bracket';
@@ -1342,6 +1550,12 @@ function renderStandardBracket() {
 }
 
 function renderLargeBracketOptimized() {
+    // Проверяем, что контейнер существует
+    if (!bracketContainer) {
+        console.error('bracketContainer не инициализирован в renderLargeBracketOptimized');
+        return;
+    }
+    
     // Для больших сеток используем виртуализацию и ленивую загрузку
     const bracketEl = document.createElement('div');
     bracketEl.className = 'improved-bracket large-bracket';
@@ -1651,6 +1865,12 @@ function updateNextMatches(bracket, currentMatch, winner) {
 
 
 function renderSchedule() {
+    // Проверяем, что scheduleBody существует
+    if (!scheduleBody) {
+        console.error('scheduleBody не инициализирован');
+        return;
+    }
+    
     scheduleBody.innerHTML = '';
     
     if (matchSchedule.length === 0) {
