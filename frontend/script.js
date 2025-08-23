@@ -227,11 +227,7 @@ function loadData() {
     // Если есть данные сетки, рендерим их
     if (bracketData) {
         console.log('Rendering existing bracket data...');
-        if (bracketData.type === 'double-elimination') {
-            renderDoubleEliminationBracket();
-        } else {
-            renderImprovedBracket();
-        }
+        renderImprovedBracket();
     }
 }
 
@@ -302,13 +298,9 @@ function toggleEditMode() {
         teamsInputSection.style.display = 'none';
     }
     
-    // Используем правильную функцию рендеринга в зависимости от типа турнира
+    // Используем новую функцию рендеринга сетки
     if (bracketData) {
-        if (bracketData.type === 'double-elimination') {
-            renderDoubleEliminationBracket();
-        } else {
-            renderImprovedBracket();
-        }
+        renderImprovedBracket();
     }
 }
 
@@ -887,14 +879,13 @@ function generateBracket() {
         console.log(`Tournament format: ${tournamentFormat}`);
         
         // Создаем сетку в зависимости от формата
-        const bracketResult = monitorPerformance('bracket-creation', () => {
+        const bracket = monitorPerformance('bracket-creation', () => {
             if (tournamentFormat === 'double-elimination') {
                 return createDoubleEliminationBracket(teams);
             } else {
                 return createImprovedBracket(teams);
             }
         });
-        const bracket = bracketResult.result;
         
         if (!bracket) {
             console.error('Failed to create bracket');
@@ -907,13 +898,13 @@ function generateBracket() {
         console.log('Bracket created successfully, generating schedule...');
         
         // Генерируем расписание с мониторингом производительности
-        const scheduleResult = monitorPerformance('schedule-generation', () => {
+        monitorPerformance('schedule-generation', () => {
             generateImprovedSchedule(bracket);
         });
         
         // Сохраняем данные с мониторингом производительности
         console.log('Saving data...');
-        const saveResult = monitorPerformance('data-saving', () => {
+        monitorPerformance('data-saving', () => {
             saveData();
         });
         
@@ -933,7 +924,7 @@ function generateBracket() {
         
         // Рендерим сетку и расписание с мониторингом производительности
         console.log('Rendering bracket and schedule...');
-        const renderResult = monitorPerformance('bracket-rendering', () => {
+        const renderTime = monitorPerformance('bracket-rendering', () => {
             if (tournamentFormat === 'double-elimination') {
                 renderDoubleEliminationBracket();
             } else {
@@ -943,7 +934,7 @@ function generateBracket() {
         });
         
         // Показываем статистику
-        showBracketStats(bracket, renderResult.duration);
+        showBracketStats(bracket, renderTime);
         
         console.log('=== BRACKET GENERATION COMPLETED ===');
         
@@ -967,7 +958,7 @@ function showBracketStats(bracket, generationTime) {
             totalRounds: bracket.rounds.length,
             totalMatches: bracket.rounds.reduce((sum, round) => sum + round.matches.length, 0),
             byeMatches: bracket.rounds[0].matches.filter(match => match.isBye).length,
-            generationTime: (typeof generationTime === 'number' && !isNaN(generationTime)) ? generationTime.toFixed(2) : 'N/A'
+            generationTime: generationTime.toFixed(2)
         };
         
         console.log('Bracket Statistics:', stats);
@@ -1171,8 +1162,24 @@ function createDoubleEliminationBracket(teams) {
             
             console.log(`Losers Round ${i + 1}: ${matchCount} matches (${i % 2 === 0 ? 'even' : 'odd'} round)`);
             
+            // Определяем название финала в зависимости от раунда
+            let finalName;
+            if (i === losersRounds - 1) {
+                finalName = 'Финал проигравших';
+            } else if (i === losersRounds - 2) {
+                finalName = 'Полуфинал проигравших';
+            } else if (i === losersRounds - 3) {
+                finalName = 'Четвертьфинал проигравших';
+            } else if (i === losersRounds - 4) {
+                finalName = '1/8 финала проигравших';
+            } else if (i === losersRounds - 5) {
+                finalName = '1/16 финала проигравших';
+            } else {
+                finalName = `Раунд ${i + 1} проигравших`;
+            }
+            
             const round = {
-                name: `Losers Round ${i + 1}`,
+                name: finalName,
                 matches: [],
                 roundNumber: i,
                 matchCount: matchCount,
@@ -2236,18 +2243,13 @@ function createDoubleEliminationMatchElement(match, round, roundIndex, matchInde
     
     // Добавляем обработчики событий для кнопок выбора победителя
     if (isEditMode && !match.completed && match.team1 && match.team2 && !match.isBye) {
-        console.log(`DEBUG: Adding event listeners for match ${match.id} in ${bracketType} bracket`);
         matchEl.querySelectorAll('.select-winner-btn').forEach(btn => {
-            console.log(`DEBUG: Adding listener to button:`, btn.textContent, btn.dataset);
             btn.addEventListener('click', function(e) {
-                console.log(`DEBUG: Button clicked!`, this.textContent, this.dataset);
                 e.preventDefault();
                 e.stopPropagation();
                 
                 const matchId = this.dataset.matchId;
                 const winnerType = this.dataset.winner;
-                
-                console.log(`DEBUG: Processing click - matchId: ${matchId}, winnerType: ${winnerType}`);
                 
                 // Находим актуальный матч в bracket
                 const currentMatch = findMatchInDoubleEliminationBracket(matchId, bracketData);
@@ -2262,12 +2264,10 @@ function createDoubleEliminationMatchElement(match, round, roundIndex, matchInde
                     return;
                 }
                 
-                console.log(`DEBUG: Setting winner for match ${matchId}:`, winnerTeam.name);
+                console.log(`Setting winner for match ${matchId}:`, winnerTeam.name);
                 setDoubleEliminationMatchWinner(currentMatch, winnerTeam);
             });
         });
-    } else {
-        console.log(`DEBUG: No event listeners added for match ${match.id}. isEditMode: ${isEditMode}, completed: ${match.completed}, team1: ${!!match.team1}, team2: ${!!match.team2}, isBye: ${match.isBye}`);
     }
     
     return matchEl;
@@ -2362,6 +2362,8 @@ function createImprovedMatchElement(match, round, roundIndex, matchIndex) {
 
 function setDoubleEliminationMatchWinner(match, winner) {
     try {
+        console.log(`Setting winner for double elimination match ${match.id}:`, winner.name);
+        
         // Устанавливаем победителя
         match.winner = winner;
         match.completed = true;
@@ -2427,11 +2429,7 @@ function setImprovedMatchWinner(match, winner) {
     saveData();
     
     // Перерисовываем сетку и расписание
-    if (bracketData && bracketData.type === 'double-elimination') {
-        renderDoubleEliminationBracket();
-    } else {
-        renderImprovedBracket();
-    }
+    renderImprovedBracket();
     renderSchedule();
 }
 
@@ -2877,17 +2875,11 @@ function monitorPerformance(operation, callback) {
             console.log(`Memory used: ${(memoryUsed / 1024 / 1024).toFixed(2)}MB`);
         }
         
-        // Возвращаем объект с результатом и временем выполнения
-        return {
-            result: result,
-            duration: duration,
-            memoryUsed: memoryUsed
-        };
+        return result;
         
     } catch (error) {
         const endTime = performance.now();
-        const duration = endTime - startTime;
-        console.error(`Performance: ${operation} failed after ${duration.toFixed(2)}ms`, error);
+        console.error(`Performance: ${operation} failed after ${(endTime - startTime).toFixed(2)}ms`, error);
         throw error;
     }
 }
