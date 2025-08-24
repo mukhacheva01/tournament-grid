@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="bracket-styles.css">
     </head>
 <body>
 
@@ -30,7 +31,7 @@
     
     <main class="main-content">
         <div class="container">
-            <div id="tournaments-list" class="section active">
+            <div id="tournaments-list" class="section">
                 <h2>Список турниров</h2>
                 
                 <div class="tournament-actions-header">
@@ -67,7 +68,7 @@
                 <p>Дата турнира: <span id="tournament-date">Не указана</span></p>
             </div>
             
-            <div id="tournament-bracket-section" class="section">
+            <div id="tournament-bracket-section" class="section active">
                 <h2>Турнирная сетка</h2>
                 
                 <div class="bracket-actions">
@@ -95,6 +96,21 @@
                 
                 <div class="tournament-bracket" id="bracket-container">
                     <!-- Турнирная сетка будет генерироваться динамически -->
+                </div>
+                
+                <!-- Добавляем контролы для Double Elimination -->
+                <div class="double-elimination-controls" style="margin-top: 20px; text-align: center;">
+                    <h3>Double Elimination Tournament</h3>
+                    <div class="control-buttons">
+                        <button class="btn btn-primary" onclick="createDoubleEliminationTournament(4)">4 команды</button>
+                        <button class="btn btn-primary" onclick="createDoubleEliminationTournament(8)">8 команд</button>
+                        <button class="btn btn-primary" onclick="createDoubleEliminationTournament(16)">16 команд</button>
+                        <button class="btn btn-secondary" onclick="simulateRandomMatch()">Случайный результат</button>
+                        <button class="btn btn-danger" onclick="resetDoubleEliminationTournament()">Сброс турнира</button>
+                    </div>
+                    <div class="status-info" id="tournament-status" style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+                        <strong>Статус:</strong> Готов к созданию турнира
+                    </div>
                 </div>
                 
                 <div class="tournament-legend">
@@ -395,5 +411,9 @@
     </footer>
     <script src="api.js"></script>
     <script src="script.js"></script>
+    <script src="bracket-engine.js"></script>
+    <script src="bracket-renderer.js"></script>
+    <script src="bracket-integration.js"></script>
+    <script src="double-elimination.js"></script>
     </body>
 </html>

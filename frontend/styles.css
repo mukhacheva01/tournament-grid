@@ -594,15 +594,50 @@ textarea:focus {
     box-shadow: 0 6px 15px rgba(229, 62, 62, 0.4);
 }
 
-/* Турнирная сетка */
+/* Турнирная сетка - улучшенный дизайн */
 .tournament-bracket {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2rem;
-    border-radius: 15px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+    border-radius: 24px;
+    padding: 3rem;
     margin: 2rem 0;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.12),
+        0 8px 25px rgba(102, 126, 234, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+    animation: slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     width: 100%;
     box-sizing: border-box;
+}
+
+.tournament-bracket::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(60px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+     100% { left: 100%; }
 }
 
 .bracket {
@@ -1344,63 +1379,67 @@ textarea:focus {
     }
 }
 
-/* Турнирная сетка */
+/* Современная турнирная сетка Double Elimination */
 .tournament-bracket {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2rem;
-    border-radius: 15px;
-    margin: 2rem 0;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.bracket-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.bracket-actions .btn {
-    padding: 0.875rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 10px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    min-width: 160px;
-}
-
-.bracket-actions .btn i {
-    margin-right: 0.5rem;
-}
-
-.bracket-actions .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-}
-
-/* Улучшенная турнирная сетка */
-.improved-bracket {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border-radius: 20px;
-    padding: 2rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    padding: 0;
     margin: 2rem 0;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    position: relative;
+    animation: bracketAppear 0.8s ease-out;
 }
 
+@keyframes bracketAppear {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Double Elimination контейнер */
+.double-elimination-bracket {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 600px;
+}
+
+/* Заголовок турнирной сетки */
 .bracket-header {
-    text-align: center;
-    margin-bottom: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.bracket-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: headerShine 3s ease-in-out infinite;
+}
+
+@keyframes headerShine {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
 .bracket-header h2 {
+    margin: 0 0 1rem 0;
     font-size: 2.5rem;
-    margin-bottom: 1rem;
+    font-weight: 700;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -1408,55 +1447,530 @@ textarea:focus {
     display: flex;
     justify-content: center;
     gap: 2rem;
-    font-size: 1.1rem;
-    opacity: 0.9;
+    flex-wrap: wrap;
+    margin-top: 1rem;
 }
 
 .bracket-info span {
     background: rgba(255, 255, 255, 0.2);
     padding: 0.5rem 1rem;
-    border-radius: 25px;
+    border-radius: 20px;
+    font-weight: 600;
     backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.bracket-grid {
+/* Панель действий */
+.bracket-actions {
     display: flex;
-    gap: 3rem;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    animation: actionsSlide 0.6s ease-out;
+}
+
+@keyframes actionsSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Контейнеры для Winners и Losers Bracket */
+.brackets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem;
+    background: #ffffff;
+}
+
+.winners-bracket-container,
+.losers-bracket-container {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.winners-bracket-container {
+    border-image: linear-gradient(135deg, #10b981, #059669) 1;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+}
+
+.losers-bracket-container {
+    border-image: linear-gradient(135deg, #f59e0b, #d97706) 1;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.bracket-section-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.bracket-section-title h3 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.bracket-section-title .bracket-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+}
+
+.winners-bracket-container .bracket-icon {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.losers-bracket-container .bracket-icon {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.bracket-actions .btn {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    min-width: 160px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bracket-actions .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+}
+
+.bracket-actions .btn:hover::before {
+    left: 100%;
+}
+
+.bracket-actions .btn i {
+    margin-right: 0.5rem;
+}
+
+.bracket-actions .btn:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Сетка раундов */
+.bracket-rounds {
+    display: flex;
+    gap: 2rem;
     overflow-x: auto;
     padding: 1rem 0;
+    min-height: 400px;
+    align-items: flex-start;
+}
+
+.bracket-rounds::-webkit-scrollbar {
+    height: 8px;
+}
+
+.bracket-rounds::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.bracket-rounds::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.bracket-rounds::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Раунд */
+.bracket-round {
+    display: flex;
+    flex-direction: column;
+    min-width: 280px;
+    animation: roundSlideIn 0.6s ease-out;
+}
+
+@keyframes roundSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.winners-round {
+    border-left: 4px solid #10b981;
+}
+
+.losers-round {
+    border-left: 4px solid #f59e0b;
+}
+
+/* Заголовок раунда */
+.round-title {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 12px 12px 0 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.round-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: titleShine 2s ease-in-out infinite;
+}
+
+@keyframes titleShine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+.round-title h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.match-count {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+/* Контейнер матчей */
+.round-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: #ffffff;
+    border-radius: 0 0 12px 12px;
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    min-height: 300px;
+}
+
+/* Матч */
+.bracket-match {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    animation: matchFadeIn 0.5s ease-out;
+}
+
+@keyframes matchFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.bracket-match:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: #667eea;
+}
+
+.bracket-match.completed {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+}
+
+.bracket-match.bye-match {
+    border-color: #94a3b8;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    opacity: 0.7;
+}
+
+/* Заголовок матча */
+.match-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    position: relative;
+}
+
+.match-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 30%;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, transparent);
+    border-radius: 1px;
+    animation: headerLine 0.6s ease-out;
+}
+
+@keyframes headerLine {
+    from { width: 0; }
+    to { width: 30%; }
+}
+
+/* Номер матча */
+.match-number {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+    animation: numberPulse 0.5s ease-out;
+}
+
+.match-number::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: numberShine 2s ease-in-out infinite;
+}
+
+@keyframes numberPulse {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes numberShine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* BYE метка */
+.bye-label {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bracket-grid::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, #5a67d8, #6b46c1);
+}
+
+.bracket-grid::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.2), transparent);
+    transform: translateY(-50%);
+    z-index: 0;
 }
 
 .bracket-round {
-    min-width: 280px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    min-width: 320px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 
+        0 15px 40px rgba(0, 0, 0, 0.1),
+        0 5px 15px rgba(102, 126, 234, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    position: relative;
+    z-index: 1;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: fadeInScale 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.bracket-round:nth-child(1) { animation-delay: 0.1s; }
+.bracket-round:nth-child(2) { animation-delay: 0.2s; }
+.bracket-round:nth-child(3) { animation-delay: 0.3s; }
+.bracket-round:nth-child(4) { animation-delay: 0.4s; }
+.bracket-round:nth-child(5) { animation-delay: 0.5s; }
+
+.bracket-round:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.15),
+        0 10px 30px rgba(102, 126, 234, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .round-title {
     text-align: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 3px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(90deg, #667eea, #764ba2) border-box;
+    position: relative;
+}
+
+.round-title::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 2px;
+    animation: expandLine 0.8s ease-out;
+}
+
+@keyframes expandLine {
+    from {
+        width: 0;
+    }
+    to {
+        width: 60px;
+    }
 }
 
 .round-title h3 {
-    color: #4a5568;
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
+    color: #2d3748;
+    font-size: 1.6rem;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: titleGlow 0.6s ease-out;
+}
+
+@keyframes titleGlow {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .match-count {
-    color: #718096;
-    font-size: 0.9rem;
-    background: #f7fafc;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
+    color: white;
+    font-size: 0.85rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
     display: inline-block;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    animation: countPulse 0.6s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.match-count::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: countShimmer 2s ease-in-out infinite;
+}
+
+@keyframes countPulse {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes countShimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
 .round-matches {
@@ -1466,13 +1980,33 @@ textarea:focus {
 }
 
 .bracket-match {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 0.5rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 2px solid rgba(226, 232, 240, 0.6);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
     overflow: hidden;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    animation: slideInMatch 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.bracket-match:nth-child(1) { animation-delay: 0.1s; }
+.bracket-match:nth-child(2) { animation-delay: 0.2s; }
+.bracket-match:nth-child(3) { animation-delay: 0.3s; }
+.bracket-match:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideInMatch {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .bracket-match::before {
@@ -1481,20 +2015,47 @@ textarea:focus {
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #667eea, #764ba2);
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    background-size: 200% 100%;
     transform: scaleX(0);
-    transition: transform 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-radius: 12px 12px 0 0;
+}
+
+.bracket-match::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(118, 75, 162, 0.02) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 12px;
 }
 
 .bracket-match:hover::before {
     transform: scaleX(1);
+    animation: gradientShift 2s ease-in-out infinite;
+}
+
+.bracket-match:hover::after {
+    opacity: 1;
 }
 
 .bracket-match:hover {
-    border-color: #667eea;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    border-color: rgba(102, 126, 234, 0.4);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 
+        0 15px 40px rgba(102, 126, 234, 0.15),
+        0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
 }
 
 .bracket-match.bye-match {
@@ -1512,16 +2073,71 @@ textarea:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+    position: relative;
+}
+
+.match-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 30%;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, transparent);
+    border-radius: 1px;
+    animation: headerLine 0.6s ease-out;
+}
+
+@keyframes headerLine {
+    from {
+        width: 0;
+    }
+    to {
+        width: 30%;
+    }
 }
 
 .match-number {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 0.15rem 0.3rem;
-    border-radius: 4px;
-    font-size: 0.6rem;
-    font-weight: 600;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+    animation: numberPulse 0.5s ease-out;
+}
+
+.match-number::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: numberShine 2s ease-in-out infinite;
+}
+
+@keyframes numberPulse {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes numberShine {
+    0% { left: -100%; }
+    100% { left: 100%; }
 }
 
 .bye-label {
@@ -1543,11 +2159,28 @@ textarea:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.3rem;
-    border-radius: 4px;
-    background: #f7fafc;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+}
+
+.match-team::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.6s ease;
+}
+
+.match-team:hover::before {
+    left: 100%;
 }
 
 .match-team.team1 {
@@ -1561,13 +2194,54 @@ textarea:focus {
 .match-team.winner {
     background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
     border-color: #48bb78;
-    transform: scale(1.02);
-    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+    transform: scale(1.05);
+    box-shadow: 
+        0 8px 25px rgba(72, 187, 120, 0.4),
+        0 0 20px rgba(72, 187, 120, 0.2);
+    animation: winnerPulse 2s ease-in-out infinite;
+    position: relative;
+    z-index: 2;
+}
+
+.match-team.winner::after {
+    content: '🏆';
+    position: absolute;
+    right: -10px;
+    top: -10px;
+    font-size: 1.2rem;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes winnerPulse {
+    0%, 100% {
+        box-shadow: 
+            0 8px 25px rgba(72, 187, 120, 0.4),
+            0 0 20px rgba(72, 187, 120, 0.2);
+    }
+    50% {
+        box-shadow: 
+            0 12px 35px rgba(72, 187, 120, 0.6),
+            0 0 30px rgba(72, 187, 120, 0.4);
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
 }
 
 .match-team:hover {
-    background: #edf2f7;
-    transform: translateX(5px);
+    background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+    transform: translateX(8px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+    border-color: rgba(102, 126, 234, 0.3);
 }
 
 .team-name {
@@ -1608,26 +2282,46 @@ textarea:focus {
 
 .select-winner-btn {
     flex: 1;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.select-winner-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+}
+
+.select-winner-btn:hover::before {
+    left: 100%;
 }
 
 .select-winner-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
 }
 
 .select-winner-btn:active {
-    transform: translateY(0);
+    transform: translateY(-2px) scale(1.02);
+    transition: all 0.1s ease;
 }
 
 /* Адаптивность для улучшенной сетки */
@@ -1877,6 +2571,240 @@ textarea:focus {
     color: white;
 }
 
+/* Команды в матче */
+.match-teams {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.match-team {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
+}
+
+.match-team::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    transition: left 0.6s ease;
+}
+
+.match-team:hover::before {
+    left: 100%;
+}
+
+.match-team:hover {
+    transform: translateX(4px);
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.match-team.winner {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-color: #10b981;
+    color: #065f46;
+    font-weight: 600;
+    animation: winnerGlow 0.6s ease-out;
+}
+
+@keyframes winnerGlow {
+    0% {
+        box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    }
+    100% {
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+}
+
+.team-name {
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+}
+
+.team-score {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    min-width: 30px;
+    text-align: center;
+}
+
+.match-team.winner .team-score {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* VS разделитель */
+.match-vs {
+    text-align: center;
+    font-weight: 700;
+    color: #64748b;
+    font-size: 0.8rem;
+    margin: 0.25rem 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Действия матча */
+.match-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.select-winner-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.select-winner-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.select-winner-btn:hover::before {
+    left: 100%;
+}
+
+.select-winner-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.select-winner-btn:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Соединительные линии */
+.bracket-connector {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    margin: 0 1rem;
+}
+
+.connector-line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, #e2e8f0, #cbd5e1, #e2e8f0);
+    position: relative;
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.connector-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, #667eea, transparent);
+    animation: lineFlow 2s ease-in-out infinite;
+}
+
+@keyframes lineFlow {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .brackets-container {
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    .winners-bracket-container,
+    .losers-bracket-container {
+        width: 100%;
+    }
+    
+    .bracket-rounds {
+        overflow-x: auto;
+        padding-bottom: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .tournament-bracket {
+        padding: 1rem;
+        margin: 1rem;
+    }
+    
+    .bracket-match {
+        min-width: 250px;
+    }
+    
+    .match-team {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .select-winner-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bracket-match {
+        min-width: 200px;
+    }
+    
+    .match-header {
+        padding: 0.4rem;
+    }
+    
+    .match-number {
+        width: 20px;
+        height: 20px;
+        font-size: 0.7rem;
+    }
+}
+
 .winners-grid,
 .losers-grid {
     display: flex;
@@ -2044,5 +2972,171 @@ textarea:focus {
     .bracket-type-label {
         font-size: 0.7rem;
         padding: 0.2rem 0.4rem;
+    }
+}
+
+/* Double Elimination Tournament Styles */
+.double-elimination-controls {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.control-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 15px 0;
+}
+
+.de-bracket-container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin: 20px 0;
+    overflow-x: auto;
+    padding: 20px;
+}
+
+.de-bracket-grid {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.de-bracket-column {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 150px;
+}
+
+.de-round-header {
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #667eea;
+    padding: 8px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.de-match-cell {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px;
+    min-height: 80px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.de-match-cell:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+}
+
+.de-match-number {
+    font-size: 12px;
+    color: #718096;
+    text-align: center;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.de-team-slot {
+    padding: 8px 12px;
+    margin: 2px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-size: 13px;
+    border: 1px solid #e2e8f0;
+}
+
+.de-team-slot:hover {
+    background: #f7fafc;
+    border-color: #667eea;
+}
+
+.de-team-slot.winner {
+    background: #48bb78;
+    color: white;
+    font-weight: bold;
+    border-color: #38a169;
+}
+
+.de-team-slot.loser {
+    background: #f56565;
+    color: white;
+    opacity: 0.7;
+    border-color: #e53e3e;
+}
+
+.de-team-slot.bye-slot {
+    background: #edf2f7;
+    color: #718096;
+    font-style: italic;
+    cursor: default;
+}
+
+.de-bracket-label {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+}
+
+.de-winners-bracket {
+    border-left: 3px solid #48bb78;
+    padding-left: 15px;
+}
+
+.de-losers-bracket {
+    border-left: 3px solid #f56565;
+    padding-left: 15px;
+}
+
+.de-champion {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #d69e2e;
+    padding: 20px;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    margin: 20px 0;
+}
+
+.de-final-bracket {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+/* Адаптивность для Double Elimination */
+@media (max-width: 768px) {
+    .control-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .de-bracket-grid {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .de-bracket-container {
+        flex-direction: column;
     }
 }

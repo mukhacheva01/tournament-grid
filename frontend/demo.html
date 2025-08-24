@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Демо - Современная турнирная сетка Double Elimination</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="bracket-styles.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .demo-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .demo-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 1rem 0;
+        }
+        
+        .demo-subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin: 0;
+        }
+        
+        .demo-controls {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .demo-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .demo-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .bracket-container {
+            padding: 2rem;
+            min-height: 60vh;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 8px;
+            color: #ff6b6b;
+            margin: 2rem;
+        }
+        
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-header">
+        <h1 class="demo-title">Современная турнирная сетка</h1>
+        <p class="demo-subtitle">Double Elimination Tournament Bracket</p>
+    </div>
+    
+    <div class="demo-controls">
+        <button class="demo-btn" onclick="createTournament(4)">Турнир 4 команды</button>
+        <button class="demo-btn" onclick="createTournament(8)">Турнир 8 команд</button>
+        <button class="demo-btn" onclick="createTournament(16)">Турнир 16 команд</button>
+        <button class="demo-btn" onclick="simulateRandom()">Случайный результат</button>
+        <button class="demo-btn" onclick="resetTournament()">Сброс</button>
+    </div>
+    
+    <div class="bracket-container">
+        <div id="bracket-display" class="loading">
+            Загрузка турнирной сетки...
+        </div>
+    </div>
+    
+    <div class="status" id="status">
+        Статус: Инициализация...
+    </div>
+    
+    <script src="bracket-engine.js"></script>
+    <script src="bracket-renderer.js"></script>
+    <script>
+        let engine = null;
+        let renderer = null;
+        let currentTeams = [];
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = 'Статус: ' + message;
+        }
+        
+        function showError(message) {
+            document.getElementById('bracket-display').innerHTML = `
+                <div class="error">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Ошибка</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+        
+        function generateTeams(count) {
+            const teamNames = [
+                'Команда Alpha', 'Команда Beta', 'Команда Gamma', 'Команда Delta',
+                'Команда Epsilon', 'Команда Zeta', 'Команда Eta', 'Команда Theta',
+                'Команда Iota', 'Команда Kappa', 'Команда Lambda', 'Команда Mu',
+                'Команда Nu', 'Команда Xi', 'Команда Omicron', 'Команда Pi'
+            ];
+            
+            return Array.from({length: count}, (_, i) => ({
+                id: `team_${i + 1}`,
+                name: teamNames[i] || `Команда ${i + 1}`,
+                seed: i + 1
+            }));
+        }
+        
+        function createTournament(teamCount) {
+            try {
+                updateStatus(`Создание турнира на ${teamCount} команд...`);
+                
+                if (typeof BracketEngine === 'undefined') {
+                    throw new Error('BracketEngine не загружен');
+                }
+                
+                if (typeof BracketRenderer === 'undefined') {
+                    throw new Error('BracketRenderer не загружен');
+                }
+                
+                currentTeams = generateTeams(teamCount);
+                engine = new BracketEngine(currentTeams);
+                
+                const container = document.getElementById('bracket-display');
+                renderer = new BracketRenderer(container);
+                
+                renderer.render(engine);
+                updateStatus(`Турнир создан (${teamCount} команд)`);
+                
+            } catch (error) {
+                console.error('Ошибка создания турнира:', error);
+                showError(`Ошибка создания турнира: ${error.message}`);
+                updateStatus('Ошибка создания турнира');
+            }
+        }
+        
+        function simulateRandom() {
+            if (!engine) {
+                showError('Сначала создайте турнир');
+                return;
+            }
+            
+            try {
+                const readyMatches = engine.getReadyMatches();
+                if (readyMatches.length === 0) {
+                    updateStatus('Нет готовых матчей для симуляции');
+                    return;
+                }
+                
+                const match = readyMatches[0];
+                if (match.team1 && match.team2) {
+                    const winner = Math.random() < 0.5 ? match.team1 : match.team2;
+                    engine.setMatchWinner(match.id, winner.id);
+                    renderer.updateMatchDisplay(match);
+                    updateStatus(`Матч завершен: ${winner.name} победил`);
+                    
+                    if (engine.isComplete()) {
+                        const champion = engine.getChampion();
+                        updateStatus(`Турнир завершен! Чемпион: ${champion.name}`);
+                        renderer.showChampionCelebration();
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка симуляции:', error);
+                showError(`Ошибка симуляции: ${error.message}`);
+            }
+        }
+        
+        function resetTournament() {
+            engine = null;
+            renderer = null;
+            currentTeams = [];
+            document.getElementById('bracket-display').innerHTML = '<div class="loading">Выберите размер турнира...</div>';
+            updateStatus('Готов к созданию турнира');
+        }
+        
+        // Инициализация
+         window.addEventListener('load', function() {
+             setTimeout(function() {
+                 console.log('BracketEngine type:', typeof BracketEngine);
+                 console.log('BracketRenderer type:', typeof BracketRenderer);
+                 
+                 if (typeof BracketEngine !== 'undefined' && typeof BracketRenderer !== 'undefined') {
+                     updateStatus('Готов к созданию турнира');
+                     document.getElementById('bracket-display').innerHTML = '<div class="loading">Выберите размер турнира...</div>';
+                 } else {
+                     showError('Не удалось загрузить компоненты турнирной сетки');
+                     updateStatus('Ошибка загрузки');
+                 }
+             }, 200);
+         });
+        
+        // Горячие клавиши
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        createTournament(4);
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        createTournament(8);
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        createTournament(16);
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        simulateRandom();
+                        break;
+                    case 'Backspace':
+                        e.preventDefault();
+                        resetTournament();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

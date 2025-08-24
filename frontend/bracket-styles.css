@@ -1,0 +1,1201 @@
+/**
+ * Современные стили для турнирной сетки Double Elimination
+ * Адаптивный дизайн с анимациями и интерактивностью
+ */
+
+/* Основные переменные */
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --accent-color: #f093fb;
+    --success-color: #4ecdc4;
+    --warning-color: #feca57;
+    --error-color: #ff6b6b;
+    --text-primary: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --text-light: #ffffff;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-dark: #2c3e50;
+    --border-color: #e9ecef;
+    --shadow-light: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.15);
+    --shadow-heavy: 0 8px 30px rgba(0, 0, 0, 0.2);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Основной контейнер */
+.bracket-renderer {
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-primary);
+    overflow-x: auto;
+    position: relative;
+}
+
+.bracket-renderer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>') repeat;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Заголовок */
+.bracket-header-container {
+    position: relative;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 2rem;
+    box-shadow: var(--shadow-light);
+}
+
+.bracket-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.bracket-title h2 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.bracket-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    min-width: 100px;
+    transition: var(--transition);
+}
+
+.stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bracket-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.control-btn {
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+}
+
+.control-btn:hover {
+    background: var(--primary-color);
+    color: var(--text-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+/* Основной контейнер сеток */
+.brackets-main-container {
+    position: relative;
+    z-index: 5;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    min-height: calc(100vh - 200px);
+}
+
+/* Секции сеток */
+.winners-bracket-section,
+.losers-bracket-section,
+.grand-final-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--shadow-medium);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.winners-bracket-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+}
+
+.losers-bracket-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--warning-color), var(--error-color));
+}
+
+.grand-final-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
+}
+
+/* Заголовки секций */
+.bracket-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.bracket-section-header h3 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.bracket-section-header h3 i {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.section-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.grand-final-header h3 {
+    color: var(--secondary-color);
+}
+
+.grand-final-header h3 i {
+    color: var(--accent-color);
+    animation: crownShine 2s ease-in-out infinite;
+}
+
+/* Контейнеры раундов */
+.bracket-rounds-container {
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    padding: 1rem 0;
+    scroll-behavior: smooth;
+}
+
+.bracket-rounds-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.bracket-rounds-container::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.bracket-rounds-container::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+.bracket-rounds-container::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* Раунды */
+.bracket-round {
+    min-width: 300px;
+    flex-shrink: 0;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    position: relative;
+}
+
+.bracket-round:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.winners-round {
+    border-left: 4px solid var(--success-color);
+}
+
+.losers-round {
+    border-left: 4px solid var(--warning-color);
+}
+
+/* Заголовки раундов */
+.round-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.round-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.round-info {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.match-count {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    background: rgba(102, 126, 234, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* Контейнеры матчей */
+.round-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.grand-final-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+/* Матчи */
+.bracket-match {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
+    overflow: hidden;
+    transition: var(--transition);
+    position: relative;
+    opacity: 0;
+    animation: matchFadeIn 0.6s ease-out forwards;
+}
+
+.bracket-match:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--primary-color);
+}
+
+.bracket-match.completed {
+    border-color: var(--success-color);
+    background: linear-gradient(135deg, rgba(78, 205, 196, 0.05), rgba(102, 126, 234, 0.05));
+}
+
+.bracket-match.ready {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.bracket-match.pending {
+    opacity: 0.7;
+    border-color: var(--text-secondary);
+}
+
+.bracket-match.bye-match {
+    border-color: var(--warning-color);
+    background: linear-gradient(135deg, rgba(254, 202, 87, 0.1), rgba(255, 107, 107, 0.1));
+}
+
+.grand-final-match {
+    min-width: 400px;
+    border: 3px solid var(--accent-color);
+    box-shadow: 0 0 30px rgba(240, 147, 251, 0.3);
+}
+
+/* Заголовки матчей */
+.match-header {
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(102, 126, 234, 0.1));
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.match-number {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--primary-color);
+    background: rgba(102, 126, 234, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    animation: numberPulse 2s ease-in-out infinite;
+}
+
+.match-status {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+.match-status.pending {
+    background: rgba(127, 140, 141, 0.1);
+    color: var(--text-secondary);
+}
+
+.match-status.ready {
+    background: rgba(102, 126, 234, 0.1);
+    color: var(--primary-color);
+}
+
+.match-status.completed {
+    background: rgba(78, 205, 196, 0.1);
+    color: var(--success-color);
+}
+
+.bye-indicator {
+    background: var(--warning-color);
+    color: var(--text-light);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Команды */
+.match-teams {
+    padding: 1.5rem;
+}
+
+.match-team {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    margin-bottom: 0.75rem;
+    border: 2px solid transparent;
+    background: var(--bg-secondary);
+}
+
+.match-team:last-child {
+    margin-bottom: 0;
+}
+
+.match-team:hover {
+    background: rgba(102, 126, 234, 0.05);
+    border-color: rgba(102, 126, 234, 0.2);
+}
+
+.match-team.winner {
+    background: linear-gradient(135deg, rgba(78, 205, 196, 0.1), rgba(102, 126, 234, 0.1));
+    border-color: var(--success-color);
+    animation: winnerGlow 1s ease-out;
+}
+
+.team-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.team-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.team-name.placeholder {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.team-seed {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: rgba(102, 126, 234, 0.1);
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+    align-self: flex-start;
+}
+
+.team-score {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    min-width: 40px;
+    text-align: center;
+}
+
+.winner-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--success-color);
+    color: var(--text-light);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    box-shadow: var(--shadow-medium);
+    animation: crownBounce 0.6s ease-out;
+}
+
+.vs-divider {
+    text-align: center;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin: 0.5rem 0;
+    position: relative;
+}
+
+.vs-divider::before,
+.vs-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.vs-divider::before {
+    left: 0;
+}
+
+.vs-divider::after {
+    right: 0;
+}
+
+/* Сообщения BYE */
+.bye-message {
+    text-align: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(254, 202, 87, 0.1), rgba(255, 107, 107, 0.1));
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--warning-color);
+}
+
+.bye-team {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.bye-text {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Действия с матчами */
+.match-actions {
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.select-winner-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--primary-color);
+    background: var(--bg-primary);
+    color: var(--primary-color);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.select-winner-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.select-winner-btn:hover {
+    background: var(--primary-color);
+    color: var(--text-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.select-winner-btn:hover::before {
+    left: 100%;
+}
+
+.select-winner-btn:active {
+    transform: translateY(0);
+}
+
+.team1-btn {
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.team1-btn:hover {
+    background: var(--success-color);
+}
+
+.team2-btn {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.team2-btn:hover {
+    background: var(--primary-color);
+}
+
+.match-result {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--success-color);
+    font-weight: 600;
+    padding: 0.75rem;
+}
+
+/* Подвал */
+.bracket-footer-container {
+    position: relative;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-color);
+    padding: 2rem;
+    box-shadow: var(--shadow-light);
+}
+
+.bracket-progress {
+    margin-bottom: 2rem;
+}
+
+.progress-info {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), var(--primary-color));
+    border-radius: 4px;
+    transition: width 0.6s ease-out;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: progressShine 2s ease-in-out infinite;
+}
+
+.bracket-legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+}
+
+.legend-color.winner {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.legend-color.ready {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.legend-color.pending {
+    background: var(--text-secondary);
+    border-color: var(--text-secondary);
+}
+
+.legend-color.bye {
+    background: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+/* Празднование чемпиона */
+.champion-celebration {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: celebrationFadeIn 0.6s ease-out;
+}
+
+.celebration-content {
+    background: var(--bg-primary);
+    padding: 3rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    box-shadow: var(--shadow-heavy);
+    position: relative;
+    max-width: 500px;
+    animation: celebrationBounce 0.8s ease-out;
+}
+
+.champion-crown {
+    font-size: 4rem;
+    color: var(--accent-color);
+    margin-bottom: 1rem;
+    animation: crownSpin 2s ease-in-out infinite;
+}
+
+.celebration-content h2 {
+    margin: 0 0 1rem 0;
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.champion-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.runner-up {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.close-celebration {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.close-celebration:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.celebration-confetti {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--accent-color);
+    animation: confettiFall 3s linear infinite;
+}
+
+/* Уведомления */
+.notification {
+    position: fixed;
+    top: 2rem;
+    right: 2rem;
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-heavy);
+    padding: 1rem 1.5rem;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+    border-left: 4px solid var(--primary-color);
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    border-left-color: var(--success-color);
+}
+
+.notification.error {
+    border-left-color: var(--error-color);
+}
+
+.notification.warning {
+    border-left-color: var(--warning-color);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-primary);
+}
+
+.notification-content i {
+    font-size: 1.25rem;
+}
+
+.notification.success .notification-content i {
+    color: var(--success-color);
+}
+
+.notification.error .notification-content i {
+    color: var(--error-color);
+}
+
+.notification.warning .notification-content i {
+    color: var(--warning-color);
+}
+
+/* Ошибки */
+.bracket-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+    padding: 2rem;
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    margin: 2rem;
+    box-shadow: var(--shadow-medium);
+}
+
+.error-icon {
+    font-size: 4rem;
+    color: var(--error-color);
+    margin-bottom: 1rem;
+}
+
+.error-message h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+}
+
+.error-message p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.retry-btn {
+    padding: 0.75rem 2rem;
+    background: var(--primary-color);
+    color: var(--text-light);
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.retry-btn:hover {
+    background: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+/* Анимации */
+@keyframes matchFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes winnerGlow {
+    0% {
+        box-shadow: 0 0 0 rgba(78, 205, 196, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(78, 205, 196, 0.6);
+    }
+    100% {
+        box-shadow: 0 0 0 rgba(78, 205, 196, 0.4);
+    }
+}
+
+@keyframes numberPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes crownShine {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.1) rotate(5deg);
+        filter: brightness(1.2);
+    }
+}
+
+@keyframes crownBounce {
+    0% {
+        transform: scale(0) rotate(0deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(180deg);
+    }
+    100% {
+        transform: scale(1) rotate(360deg);
+    }
+}
+
+@keyframes crownSpin {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+    25% {
+        transform: rotate(90deg) scale(1.1);
+    }
+    50% {
+        transform: rotate(180deg) scale(1);
+    }
+    75% {
+        transform: rotate(270deg) scale(1.1);
+    }
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+@keyframes progressShine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes celebrationFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes celebrationBounce {
+    0% {
+        transform: scale(0.3) translateY(-100px);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.05) translateY(0);
+    }
+    70% {
+        transform: scale(0.95);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+@keyframes matchComplete {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 30px rgba(78, 205, 196, 0.4);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.animate-entrance {
+    animation: matchFadeIn 0.6s ease-out forwards;
+}
+
+.connected-highlight {
+    border-color: var(--accent-color) !important;
+    box-shadow: 0 0 15px rgba(240, 147, 251, 0.4) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Адаптивный дизайн */
+@media (max-width: 1200px) {
+    .bracket-title {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .bracket-stats {
+        justify-content: center;
+    }
+    
+    .bracket-round {
+        min-width: 280px;
+    }
+}
+
+@media (max-width: 768px) {
+    .bracket-renderer.compact-mode .bracket-header-container {
+        padding: 1rem;
+    }
+    
+    .bracket-renderer.compact-mode .bracket-title h2 {
+        font-size: 1.75rem;
+    }
+    
+    .bracket-renderer.compact-mode .brackets-main-container {
+        padding: 1rem;
+        gap: 2rem;
+    }
+    
+    .bracket-renderer.compact-mode .bracket-round {
+        min-width: 250px;
+        padding: 1rem;
+    }
+    
+    .bracket-renderer.compact-mode .match-teams {
+        padding: 1rem;
+    }
+    
+    .bracket-renderer.compact-mode .match-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .bracket-renderer.compact-mode .select-winner-btn {
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+    
+    .bracket-renderer.compact-mode .stat-item {
+        min-width: 80px;
+        padding: 0.75rem;
+    }
+    
+    .bracket-renderer.compact-mode .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .bracket-renderer.compact-mode .bracket-rounds-container {
+        gap: 1rem;
+    }
+    
+    .bracket-renderer.compact-mode .bracket-round {
+        min-width: 220px;
+    }
+    
+    .bracket-renderer.compact-mode .bracket-stats {
+        gap: 1rem;
+    }
+    
+    .bracket-renderer.compact-mode .bracket-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .bracket-renderer.compact-mode .bracket-legend {
+        gap: 1rem;
+    }
+    
+    .bracket-renderer.compact-mode .celebration-content {
+        margin: 1rem;
+        padding: 2rem;
+    }
+    
+    .bracket-renderer.compact-mode .notification {
+        right: 1rem;
+        left: 1rem;
+        transform: translateY(-100%);
+    }
+    
+    .bracket-renderer.compact-mode .notification.show {
+        transform: translateY(0);
+    }
+}
+
+/* Темная тема */
+.bracket-renderer.dark-theme {
+    --bg-primary: #2c3e50;
+    --bg-secondary: #34495e;
+    --text-primary: #ecf0f1;
+    --text-secondary: #bdc3c7;
+    --border-color: #4a5f7a;
+}
+
+.bracket-renderer.dark-theme .bracket-header-container,
+.bracket-renderer.dark-theme .bracket-footer-container {
+    background: rgba(44, 62, 80, 0.95);
+}
+
+.bracket-renderer.dark-theme .winners-bracket-section,
+.bracket-renderer.dark-theme .losers-bracket-section,
+.bracket-renderer.dark-theme .grand-final-section {
+    background: rgba(44, 62, 80, 0.95);
+}
+
+/* Высокая контрастность */
+@media (prefers-contrast: high) {
+    .bracket-renderer {
+        --shadow-light: 0 2px 10px rgba(0, 0, 0, 0.3);
+        --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.4);
+        --shadow-heavy: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+    
+    .bracket-match {
+        border-width: 3px;
+    }
+}
+
+/* Уменьшенная анимация */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .bracket-renderer.no-animations * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
