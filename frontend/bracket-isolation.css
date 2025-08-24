@@ -1,0 +1,130 @@
+/* Изоляция стилей для jQuery Bracket */
+/* Этот файл должен загружаться последним для переопределения всех конфликтующих стилей */
+
+/* Контейнер изоляции */
+.bracket-isolation-container {
+    /* Базовые стили контейнера */
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    background: #fff !important;
+    padding: 20px !important;
+    margin: 20px 0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+    
+    /* Сброс наследования */
+    font-family: Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    color: #333 !important;
+}
+
+/* Полный сброс для всех элементов внутри bracket */
+.bracket-isolation-container * {
+    box-sizing: border-box !important;
+}
+
+/* Специфичные стили для jQuery Bracket */
+.bracket-isolation-container .jQBracket {
+    font-family: Arial, sans-serif !important;
+    font-size: 12px !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.bracket-isolation-container .jQBracket .team {
+    background: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    color: #495057 !important;
+    font-size: 11px !important;
+    padding: 2px 5px !important;
+    margin: 0 !important;
+    border-radius: 3px !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+.bracket-isolation-container .jQBracket .team.win {
+    background: #d4edda !important;
+    border-color: #c3e6cb !important;
+    color: #155724 !important;
+}
+
+.bracket-isolation-container .jQBracket .team.lose {
+    background: #f8d7da !important;
+    border-color: #f5c6cb !important;
+    color: #721c24 !important;
+}
+
+.bracket-isolation-container .jQBracket .match {
+    background: transparent !important;
+    border: none !important;
+    margin: 5px 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+.bracket-isolation-container .jQBracket .round {
+    background: transparent !important;
+    border: none !important;
+    margin: 0 10px !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+/* Соединительные линии */
+.bracket-isolation-container .jQBracket .connector {
+    border-color: #6c757d !important;
+    background: transparent !important;
+}
+
+/* Заголовки раундов */
+.bracket-isolation-container .jQBracket .round-label {
+    font-size: 12px !important;
+    font-weight: bold !important;
+    color: #495057 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 5px 0 !important;
+    margin: 0 !important;
+    text-align: center !important;
+}
+
+/* Отключение всех анимаций и эффектов */
+.bracket-isolation-container .jQBracket * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+}
+
+/* Принудительное переопределение любых градиентов и теней */
+.bracket-isolation-container .jQBracket *:not(.team.win):not(.team.lose) {
+    background-image: none !important;
+    background-gradient: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+/* Сброс позиционирования */
+.bracket-isolation-container .jQBracket .team,
+.bracket-isolation-container .jQBracket .match,
+.bracket-isolation-container .jQBracket .round {
+    position: relative !important;
+    z-index: auto !important;
+}
+
+/* Базовые стили для текста */
+.bracket-isolation-container .jQBracket div,
+.bracket-isolation-container .jQBracket span {
+    font-family: Arial, sans-serif !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+}

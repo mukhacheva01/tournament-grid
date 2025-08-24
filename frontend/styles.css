@@ -5,6 +5,44 @@
     box-sizing: border-box;
 }
 
+/* Изоляция стилей для jQuery Bracket */
+.bracket-isolation-container {
+    /* Сброс всех наследуемых стилей */
+    all: initial;
+    
+    /* Восстановление базовых стилей для корректной работы */
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #000;
+    background: transparent;
+    
+    /* Контейнер должен занимать всю доступную ширину */
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    
+    /* Изоляция от внешних стилей */
+    position: relative;
+    z-index: 1;
+}
+
+/* Сброс стилей для всех элементов внутри изолированного контейнера */
+.bracket-isolation-container * {
+    all: unset;
+    display: revert;
+    box-sizing: border-box;
+}
+
+/* Восстановление базовых стилей для текста внутри bracket */
+.bracket-isolation-container div,
+.bracket-isolation-container span {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.2;
+    color: #000;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
@@ -1377,6 +1415,77 @@ textarea:focus {
         padding: 0.4rem 0.6rem;
         min-height: 35px;
     }
+}
+
+/* jQuery Bracket Container */
+.jquery-bracket-container {
+    max-width: 1200px;
+    margin: 20px 0;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.jquery-bracket-controls {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.jquery-bracket-controls button {
+    margin: 5px;
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.jquery-bracket-controls button:hover {
+    background: #0056b3;
+}
+
+.jquery-bracket-controls select {
+    margin: 5px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#bracket {
+    margin-top: 20px;
+    min-height: 400px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.status {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.success { 
+    background-color: #d4edda; 
+    color: #155724; 
+    border: 1px solid #c3e6cb; 
+}
+
+.error { 
+    background-color: #f8d7da; 
+    color: #721c24; 
+    border: 1px solid #f5c6cb; 
+}
+
+.info { 
+    background-color: #d1ecf1; 
+    color: #0c5460; 
+    border: 1px solid #bee5eb; 
 }
 
 /* Современная турнирная сетка Double Elimination */

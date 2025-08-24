@@ -3,417 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Городской турнир по пляжному волейболу</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="bracket-styles.css">
-    </head>
+    <title>Тест jQuery Bracket</title>
+    <link rel="stylesheet" href="./jquery.bracket.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background: #0056b3;
+        }
+        .controls select {
+            margin: 5px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #bracket {
+            margin-top: 20px;
+            min-height: 400px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+
+    </style>
+</head>
 <body>
-
-    <header class="main-header">
-        <div class="header-container">
-            <div class="logo">
-                <i class="fas fa-volleyball-ball"></i>
-                <span>Beach Volleyball</span>
-            </div>
-            <nav class="main-nav">
-                <ul>
-                    <li><a href="#" class="active" data-section="tournaments-list">Турниры</a></li>
-                    <li><a href="#" data-section="tournament-bracket-section">Турнирная сетка</a></li>
-                    <li><a href="#" data-section="schedule-section">Расписание</a></li>
-                </ul>
-            </nav>
+    <div class="container">
+        <h1>Тест jQuery Bracket Plugin</h1>
+        
+        <div id="status" class="status info">Загрузка библиотек...</div>
+        
+        <div class="controls">
+            <label>Количество команд:</label>
+            <select id="teamCount">
+                <option value="4">4 команды</option>
+                <option value="8" selected>8 команд</option>
+                <option value="16">16 команд</option>
+            </select>
+            
+            <label>Тип турнира:</label>
+            <select id="tournamentType">
+                <option value="single">Одиночное исключение</option>
+                <option value="double" selected>Двойное исключение</option>
+            </select>
+            
+            <button onclick="generateTournament()">Создать турнир</button>
+            <button onclick="simulateResults()">Симулировать результаты</button>
+            <button onclick="resetTournament()">Сбросить</button>
         </div>
-    </header>
-    
-    <main class="main-content">
-        <div class="container">
-            <div id="tournaments-list" class="section">
-                <h2>Список турниров</h2>
-                
-                <div class="tournament-actions-header">
-                    <button id="create-tournament-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i>
-                        Создать турнир
-                    </button>
-                </div>
-                
-                <div class="tournament-list" id="tournaments-container">
-                    <!-- Турниры будут добавляться динамически -->
-                </div>
-                
-                <!-- Админ панель удалена -->
-            </div>
-            
-            <div id="teams-input-section" class="section" style="display: none;">
-                <h2>Ввод команд</h2>
-                <div class="teams-input-container">
-                    <label for="team-name-input">Название команды</label>
-                    <input type="text" id="team-name-input" placeholder="Введите название команды">
-                    <button id="add-team-input-btn" class="btn btn-primary">Добавить команду</button>
-                    <button id="save-teams-btn" class="btn btn-success">Сохранить команды</button>
-                    <div id="teams-list" class="teams-list">
-                        <!-- Список команд будет добавляться динамически -->
-                    </div>
-                </div>
-            </div>
-            
-            <div id="tournament-info" class="section">
-                <h2>Информация о турнире</h2>
-                <p>Количество участников: <span id="participants-count">0</span></p>
-                <p>Количество сеянных: <span id="seeded-count">0</span></p>
-                <p>Дата турнира: <span id="tournament-date">Не указана</span></p>
-            </div>
-            
-            <div id="tournament-bracket-section" class="section active">
-                <h2>Турнирная сетка</h2>
-                
-                <div class="bracket-actions">
-                    <button id="generate-bracket-btn" class="btn btn-success">
-                        <i class="fas fa-sitemap"></i>
-                        Сгенерировать сетку
-                    </button>
-                    <button id="toggle-edit-btn" class="btn btn-secondary">
-                        <i class="fas fa-edit"></i>
-                        Редактировать
-                    </button>
-                    <button id="test-save-btn" class="btn btn-outline">
-                        <i class="fas fa-save"></i>
-                        Тест сохранения
-                    </button>
-                    <button id="system-health-btn" class="btn btn-warning">
-                        <i class="fas fa-heartbeat"></i>
-                        Проверить систему
-                    </button>
-                    <button id="reset-data-btn" class="btn btn-danger">
-                        <i class="fas fa-trash"></i>
-                        Сбросить данные
-                    </button>
-                </div>
-                
-                <div class="tournament-bracket" id="bracket-container">
-                    <!-- Турнирная сетка будет генерироваться динамически -->
-                </div>
-                
-                <!-- Добавляем контролы для Double Elimination -->
-                <div class="double-elimination-controls" style="margin-top: 20px; text-align: center;">
-                    <h3>Double Elimination Tournament</h3>
-                    <div class="control-buttons">
-                        <button class="btn btn-primary" onclick="createDoubleEliminationTournament(4)">4 команды</button>
-                        <button class="btn btn-primary" onclick="createDoubleEliminationTournament(8)">8 команд</button>
-                        <button class="btn btn-primary" onclick="createDoubleEliminationTournament(16)">16 команд</button>
-                        <button class="btn btn-secondary" onclick="simulateRandomMatch()">Случайный результат</button>
-                        <button class="btn btn-danger" onclick="resetDoubleEliminationTournament()">Сброс турнира</button>
-                    </div>
-                    <div class="status-info" id="tournament-status" style="margin-top: 15px; padding: 10px; background: #f5f5f5; border-radius: 5px;">
-                        <strong>Статус:</strong> Готов к созданию турнира
-                    </div>
-                </div>
-                
-                <div class="tournament-legend">
-                    <ul>
-                        <li>🏆 Победитель матча</li>
-                        <li>⚪ Участник</li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div id="schedule-section" class="section">
-                <h2>Расписание матчей</h2>
-                <div class="schedule-content">
-                    <table class="schedule-table">
-                        <thead>
-                            <tr>
-                                <th>Время</th>
-                                <th>Корт</th>
-                                <th>Команда 1</th>
-                                <th>Команда 2</th>
-                                <th>Раунд</th>
-                                <th>Статус</th>
-                            </tr>
-                        </thead>
-                        <tbody id="schedule-body">
-                            <!-- Расписание будет добавляться динамически -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="results-section" class="section">
-                <h2>Результаты турнира</h2>
-                <div class="results-content" id="results-container">
-                    <!-- Результаты будут добавляться динамически -->
-                </div>
-            </div>
-        </div>
-    </main>
-    
-    <!-- Модальное окно для создания турнира -->
-    <div id="tournament-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 id="tournament-modal-title">Создать турнир</h2>
-            <form id="tournament-form">
-                <!-- Основные параметры турнира -->
-                <div class="form-section">
-                    <h3>Основные параметры</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="tournament-name">Название турнира</label>
-                            <input type="text" id="tournament-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tournament-date-input">Дата проведения</label>
-                            <input type="date" id="tournament-date-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tournament-time">Время начала</label>
-                            <input type="time" id="tournament-time" value="10:00" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="tournament-location">Место проведения</label>
-                            <input type="text" id="tournament-location" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="tournament-city">Город</label>
-                            <input type="text" id="tournament-city" value="Москва" required>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Формат турнира -->
-                <div class="form-section">
-                    <h3>Формат турнира</h3>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="single-elimination">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Single elimination</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="double-elimination" checked>
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Double elimination</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="groups">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Группы</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="pseudo-groups">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Псевдогруппа</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="sand-master">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Мастер песка</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="master-mix">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Мастер-микст</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="royal-mix">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Королевский микст</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="kings-court">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Kings of the court/Короли корта</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="kings-beach">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Kings of the beach+/Король пляжа+</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="dynamic">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Динамический</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="tournament-format" value="leagues">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Деление на лиги</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Тип игры -->
-                <div class="form-section">
-                    <h3>Тип игры</h3>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="game-type" value="beach-2x2" checked>
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Пляжный/beachvolley 2×2</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="game-type" value="snow-3x3">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Снежный/snowvolley 3×3</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="game-type" value="park-4x4">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Парковый/parkvolley 4×4</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="game-type" value="classic-6x6">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Классика/volleyball 6×6</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="game-type" value="other">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Другой/other</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Пол/Микс -->
-                <div class="form-section">
-                    <h3>Пол/Микс</h3>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="gender-mix" value="men" checked>
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Мужской/Men</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="gender-mix" value="women">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Женский/Women</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="gender-mix" value="mix">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Микст/Mix</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Ограничения -->
-                <div class="form-section">
-                    <h3>Ограничения</h3>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="restrictions" value="no-restrictions" checked>
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Без ограничений</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="restrictions" value="youth">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Молодежный</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="restrictions" value="veterans">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Ветераны</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Организатор -->
-                <div class="form-section">
-                    <h3>Информация об организаторе</h3>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="organizer-number">Номер организатора (если есть)</label>
-                            <input type="text" id="organizer-number" placeholder="Введите номер">
-                        </div>
-                        <div class="form-group">
-                            <label for="organizer-password">Пароль (если есть)</label>
-                            <input type="password" id="organizer-password" placeholder="Введите пароль">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <a href="#" class="get-organizer-link">Получить номер организатора</a>
-                    </div>
-                </div>
-
-                <!-- Сбор заявок -->
-                <div class="form-section">
-                    <h3>Сбор заявок</h3>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="application-collection" value="yes" checked>
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Да</span>
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="application-collection" value="no">
-                            <span class="radio-custom"></span>
-                            <span class="radio-label">Нет</span>
-                        </label>
-                    </div>
-                    <p class="form-note">Подключить сбор заявок на turnir-online.ru</p>
-                </div>
-
-                <!-- Положения турнира -->
-                <div class="form-section">
-                    <h3>Положения турнира</h3>
-                    <div class="form-group">
-                        <textarea id="tournament-regulations" rows="8" placeholder="Дата и время окончания регистрации -
-Место проведения -
-Тип турнира (муж, жен, микс) -
-Ограничения по участникам (возраст, территория..) -
-Взнос -
-Организатор -
-Контакты организатора -"></textarea>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="quick-fill-btn">Быстрое заполнение</button>
-                    <button type="submit" class="btn btn-primary">Создать турнир</button>
-                </div>
-            </form>
-        </div>
+        
+        <div id="bracket"></div>
     </div>
     
-    
-    
-    <footer class="main-footer">
-        <div class="footer-container">
-            <div class="footer-info">
-                <div class="footer-logo">
-                    <i class="fas fa-volleyball-ball"></i>
-                    <span>Beach Volleyball</span>
-                </div>
-                <p>Турниры по пляжному волейболу</p>
-            </div>
-            <div class="footer-links">
-
-                <div class="footer-section">
-                    <h4>Следите за нами</h4>
-                    <div class="social-links">
-                        <a href="https://vk.com/beachvolley_turnir_online"><i class="fab fa-vk"></i></a>
-                        <a href="https://t.me/turnironline"><i class="fab fa-telegram"></i></a>
-
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Городской турнир по пляжному волейболу. Все права защищены.</p>
-        </div>
-    </footer>
-    <script src="api.js"></script>
-    <script src="script.js"></script>
-    <script src="bracket-engine.js"></script>
-    <script src="bracket-renderer.js"></script>
-    <script src="bracket-integration.js"></script>
-    <script src="double-elimination.js"></script>
-    </body>
+    <script src="./jquery-3.6.0.min.js"></script>
+    <script src="./jquery.bracket.min.js"></script>
+    <script>
+        let currentData = null;
+        
+        $(document).ready(function() {
+            const status = $('#status');
+            
+            // Проверка загрузки jQuery
+            if (typeof jQuery !== 'undefined') {
+                status.text('✓ jQuery загружен успешно');
+                status.removeClass('info').addClass('success');
+                
+                // Проверка загрузки jQuery Bracket
+                if (typeof $.fn.bracket !== 'undefined') {
+                    status.text('✓ jQuery Bracket загружен успешно');
+                    generateTournament();
+                } else {
+                    status.text('✗ jQuery Bracket не загружен');
+                    status.removeClass('success').addClass('error');
+                }
+            } else {
+                status.text('✗ jQuery не загружен');
+                status.removeClass('info').addClass('error');
+            }
+        });
+        
+        function generateTeams(count) {
+            const teams = [];
+            for (let i = 0; i < count; i += 2) {
+                teams.push([
+                    `Команда ${i + 1}`,
+                    i + 1 < count ? `Команда ${i + 2}` : null
+                ]);
+            }
+            return teams;
+        }
+        
+        function generateEmptyResults(teamCount, type) {
+            if (type === 'single') {
+                // Одиночное исключение
+                const rounds = Math.log2(teamCount);
+                const results = [];
+                
+                for (let round = 0; round < rounds; round++) {
+                    const matchesInRound = teamCount / Math.pow(2, round + 1);
+                    const roundResults = [];
+                    
+                    for (let match = 0; match < matchesInRound; match++) {
+                        roundResults.push([null, null]);
+                    }
+                    
+                    results.push(roundResults);
+                }
+                
+                return [results];
+            } else {
+                // Двойное исключение
+                const rounds = Math.log2(teamCount);
+                
+                // Winner bracket
+                const winnerResults = [];
+                for (let round = 0; round < rounds; round++) {
+                    const matchesInRound = teamCount / Math.pow(2, round + 1);
+                    const roundResults = [];
+                    
+                    for (let match = 0; match < matchesInRound; match++) {
+                        roundResults.push([null, null]);
+                    }
+                    
+                    winnerResults.push(roundResults);
+                }
+                
+                // Loser bracket
+                const loserResults = [];
+                for (let round = 0; round < (rounds - 1) * 2; round++) {
+                    const roundResults = [];
+                    roundResults.push([null, null]);
+                    loserResults.push(roundResults);
+                }
+                
+                // Finals
+                const finalResults = [
+                    [[null, null]],
+                    [[null, null]]
+                ];
+                
+                return [winnerResults, loserResults, finalResults];
+            }
+        }
+        
+        function generateTournament() {
+            const teamCount = parseInt($('#teamCount').val());
+            const tournamentType = $('#tournamentType').val();
+            
+            const teams = generateTeams(teamCount);
+            const results = generateEmptyResults(teamCount, tournamentType);
+            
+            currentData = {
+                teams: teams,
+                results: results
+            };
+            
+            $('#bracket').bracket({
+                init: currentData,
+                save: function(data, userData) {
+                    currentData = data;
+                    console.log('Данные турнира обновлены:', data);
+                }
+            });
+            
+            $('#status').text('✓ Турнир создан успешно').removeClass('error info').addClass('success');
+        }
+        
+        function simulateResults() {
+            if (!currentData) {
+                alert('Сначала создайте турнир!');
+                return;
+            }
+            
+            // Простая симуляция результатов
+            const newData = JSON.parse(JSON.stringify(currentData));
+            
+            function simulateRound(results) {
+                for (let round of results) {
+                    for (let match of round) {
+                        if (match[0] === null && match[1] === null) {
+                            match[0] = Math.floor(Math.random() * 5) + 1;
+                            match[1] = Math.floor(Math.random() * 5) + 1;
+                            // Убедимся, что есть победитель
+                            if (match[0] === match[1]) {
+                                match[0]++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Симулируем результаты для всех раундов
+            for (let resultSet of newData.results) {
+                simulateRound(resultSet);
+            }
+            
+            currentData = newData;
+            
+            $('#bracket').bracket({
+                init: currentData,
+                save: function(data, userData) {
+                    currentData = data;
+                }
+            });
+            
+            $('#status').text('✓ Результаты симулированы').removeClass('error info').addClass('success');
+        }
+        
+        function resetTournament() {
+            generateTournament();
+        }
+    </script>
+</body>
 </html>
