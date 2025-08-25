@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Турнирная сетка</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+        .main-header {
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .main-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .main-header p {
+            margin: 10px 0 30px 0;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        .nav-btn.active {
+            background: white;
+            color: #667eea;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        .teams-input {
+            margin: 20px 0;
+        }
+        .teams-input label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 16px;
+        }
+        .teams-input textarea {
+            width: 95%;
+            height: 150px;
+            padding: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .teams-input textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 15px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 1);
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        .button:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .button:active {
+             transform: translateY(0);
+             box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+         }
+         .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        @media (max-width: 768px) {
+            .button-group {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        
+        /* Стили для расписания игр */
+        .schedule-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .schedule-header {
+            background: #4a90e2;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .schedule-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .schedule-info span {
+            font-weight: 500;
+        }
+        
+        .time-input, .date-input, .duration-input, .courts-input {
+            padding: 5px 8px;
+            border: none;
+            border-radius: 5px;
+            margin-left: 5px;
+            font-size: 14px;
+        }
+        
+        .generate-schedule-btn, .save-schedule-btn {
+            background: #5cb85c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s ease;
+        }
+        
+        .generate-schedule-btn:hover, .save-schedule-btn:hover {
+            background: #4cae4c;
+        }
+        
+        .schedule-table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .schedule-table th {
+            background: #f8f9fa;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+        }
+        
+        .schedule-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #dee2e6;
+            color: #495057;
+        }
+        
+        .schedule-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .schedule-table tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .schedule-actions {
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .schedule-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .schedule-table {
+                font-size: 12px;
+            }
+            
+            .schedule-table th,
+            .schedule-table td {
+                padding: 8px 4px;
+            }
+        }
+             .button {
+                 width: 100%;
+                 max-width: 300px;
+             }
+         }
+        .tournament-bracket {
+            overflow-x: auto;
+            padding: 20px;
+        }
+        .setka {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        .setka td {
+            border: 1px solid #333;
+            padding: 4px;
+            text-align: center;
+            min-width: 30px;
+            height: 26px;
+            vertical-align: middle;
+            border: none; /* убрали общий бордер, далее задаём выборочно */
+        }
+        /* линии сетки */
+        .t  { border-top:   2px solid #000; }
+        .r  { border-right: 2px solid #000; }
+        .b  { border-bottom:2px solid #000; }
+        .l  { border-left:  2px solid #000; }
+        .tr { border-top:   2px solid #000; border-right: 2px solid #000; }
+        .tl { border-top:   2px solid #000; border-left:  2px solid #000; }
+        .br { border-bottom:2px solid #000; border-right:2px solid #000; }
+        .bl { border-bottom:2px solid #000; border-left: 2px solid #000; }
+
+        /* серые шапки с номером игры */
+        [id^="sh"], [id^="foot"] {
+            background: #cfcfcf;
+            font-weight: bold;
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        .match-cell {
+            background: #e8f4fd;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .match-cell:hover {
+            background: #d1ecf1;
+        }
+        .winner {
+            background: #d4edda;
+            color: #155724;
+        }
+        .loser {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .vinlus0 { color: #721c24; }
+        .vinlus1 { color: #155724; }
+        
+        .teams-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .team-item {
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(102, 126, 234, 0.1);
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .team-item:hover {
+            transform: translateY(-2px);
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        .algorithm-explanation {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+
+         .code-block {
+             background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-header">
+            <h1>🏆 Турнирная сетка</h1>
+            <p>Создайте и управляйте турнирными сетками</p>
+            <div class="nav-buttons">
+                <a href="index.html" class="nav-btn">
+                    🏆 Турниры
+                </a>
+                <a href="tournament.html" class="nav-btn active">
+                    🏛️ Турнирная сетка
+                </a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+            <h2>👥 Управление командами</h2>
+            <div class="teams-input">
+                <label for="teams-textarea">Введите команды (по одной на строку):</label>
+                <textarea id="teams-textarea" placeholder="Команда 1\nКоманда 2\nКоманда 3\nКоманда 4\nКоманда 5\nКоманда 6\nКоманда 7\nКоманда 8">Барселона\nРеал Мадрид\nМанчестер Юнайтед\nБавария\nПСЖ\nЮвентус\nЛиверпуль\nМанчестер Сити</textarea>
+            </div>
+            <div class="button-group">
+                <button class="button" onclick="loadTeams()">📥 Загрузить команды</button>
+                <button class="button" onclick="generateBracket()">🏗️ Создать сетку</button>
+                <button class="button" onclick="resetTournament()">🔄 Сброс</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Текущие команды</h2>
+            <div id="teams-display" class="teams-list"></div>
+        </div>
+        
+        <div class="section">
+            <h2>🏟️ Турнирная сетка</h2>
+            <div id="tabl" class="tournament-bracket"></div>
+        </div>
+        
+        <div class="section">
+            <h2>📋 Расписание игр</h2>
+            <div class="schedule-container">
+                <div class="schedule-header">
+                    <div class="schedule-info">
+                        <span>Начало турнира: <input type="time" value="10:00" class="time-input"> <input type="date" value="2025-08-25" class="date-input"></span>
+                        <span>Длительность игр: <input type="number" value="40" min="1" max="180" class="duration-input"> мин.</span>
+                        <span>Количество кортов: <input type="number" value="2" min="1" max="10" class="courts-input"></span>
+                        <button class="generate-schedule-btn">Сгенерировать</button>
+                    </div>
+                </div>
+                <div class="schedule-table-container">
+                    <table class="schedule-table" id="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>N</th>
+                                <th>Время</th>
+                                <th>Дата</th>
+                                <th>Корт</th>
+                                <th>Команда 1</th>
+                                <th>Команда 2</th>
+                                <th>Результат</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-tbody">
+                            <!-- Расписание будет генерироваться здесь -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="schedule-actions">
+                    <button class="save-schedule-btn">Сохранить</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        // Глобальные переменные для демонстрации
+        let comandy = [];
+        let s = 3; // размер турнира
+        let turnir_id = 1;
+        let org_idt = 1;
+        let adm = true;
+        let org_id = 1;
+        let gamid_oldid = {};
+        
+        // Инициализация
+        function loadTeams() {
+            const textarea = document.getElementById('teams-textarea');
+            const teams = textarea.value.split('\n').map(team => team.trim()).filter(team => team !== '');
+            comandy = teams;
+            displayTeams();
+        }
+        
+        function displayTeams() {
+            const display = document.getElementById('teams-display');
+            display.innerHTML = '';
+            comandy.forEach((team, index) => {
+                const div = document.createElement('div');
+                div.className = 'team-item';
+                div.textContent = `${index + 1}. ${team}`;
+                display.appendChild(div);
+            });
+        }
+        
+        function shuffleTeams() {
+            if (comandy.length === 0) {
+                alert('Сначала загрузите команды!');
+                return;
+            }
+            // Перемешиваем массив команд
+            for (let i = comandy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [comandy[i], comandy[j]] = [comandy[j], comandy[i]];
+            }
+            displayTeams();
+        }
+        
+        function generateBracket() {
+            if (comandy.length < 2) {
+                alert('Нужно минимум 2 команды!');
+                return;
+            }
+            
+            // Определяем размер турнира
+            s = Math.ceil(Math.log(comandy.length) / Math.log(2));
+            
+            // Инициализируем сетку если она не существует
+            if (!setka || !setka[s]) {
+                alert('Сетка для ' + Math.pow(2, s) + ' команд не определена в коде');
+                return;
+            }
+            
+            // Очищаем предыдущие результаты
+            for (let i = 0; i < setka[s].length; i++) {
+                if (setka[s][i]) {
+                    // Сбрасываем результаты, но сохраняем структуру
+                    if (setka[s][i].length > 4) {
+                        setka[s][i].splice(4);
+                    }
+                    if (setka[s][i].length > 2) {
+                        setka[s][i].splice(2);
+                    }
+                }
+            }
+            
+            // Заполняем первый тур командами
+
+            let teamIndex = 0;
+            const firstRoundStart = 1;
+            const firstRoundEnd = Math.pow(2, s-1);
+            
+            for (let i = firstRoundStart; i <= firstRoundEnd && teamIndex < comandy.length; i++) {
+                if (setka[s][i]) {
+                    setka[s][i][2] = teamIndex++;
+                    if (teamIndex < comandy.length) {
+                        setka[s][i][3] = teamIndex++;
+                    }
+                }
+            }
+            
+            write_table(s);
+        }
+        
+        function simulateTournament() {
+            if (!setka || !setka[s]) {
+                alert('Сначала создайте сетку!');
+                return;
+            }
+            
+            // Симулируем все матчи
+            for (let i = 1; i < setka[s].length; i++) {
+                if (setka[s][i] && setka[s][i].length >= 4 && 
+                    typeof setka[s][i][2] !== 'undefined' && 
+                    typeof setka[s][i][3] !== 'undefined' &&
+                    setka[s][i].length < 5) {
+                    
+                    // Случайно выбираем победителя
+                    const winner = Math.random() < 0.5 ? 0 : 1;
+                    rezult(i, winner, 1);
+                }
+            }
+        }
+        
+        function resetTournament() {
+            document.getElementById('tabl').innerHTML = '';
+            if (setka && setka[s]) {
+                for (let i = 0; i < setka[s].length; i++) {
+                    if (setka[s][i] && setka[s][i].length > 2) {
+                        setka[s][i].splice(2);
+                    }
+                }
+            }
+        }
+        
+        function simulateTournament() {
+            if (comandy.length < 2) {
+                alert('Сначала создайте турнирную сетку!');
+                return;
+            }
+            
+            // Простая симуляция - случайные результаты
+            const rounds = s;
+            for (let round = 1; round < rounds; round++) {
+                const roundStart = Math.pow(2, rounds - round - 1);
+                const roundEnd = Math.pow(2, rounds - round) - 1;
+                
+                for (let i = roundStart; i <= roundEnd; i++) {
+                    if (setka[s][i] && setka[s][i][2] !== undefined && setka[s][i][3] !== undefined) {
+                        // Случайно выбираем победителя
+                        const winner = Math.random() < 0.5 ? setka[s][i][2] : setka[s][i][3];
+                        const nextMatch = setka[s][i][0];
+                        const position = setka[s][i][1];
+                        
+                        if (nextMatch && setka[s][nextMatch]) {
+                            setka[s][nextMatch][position] = winner;
+                        }
+                    }
+                }
+            }
+            
+            write_table();
+        }
+        
+        function resetTournament() {
+            // Очищаем турнирную сетку
+            document.getElementById('tabl').innerHTML = '';
+            
+            // Сбрасываем команды к исходному состоянию
+            loadTeams();
+            
+            alert('Турнир сброшен!');
+        }
+        
+        function generateSchedule() {
+            const startTime = document.querySelector('.time-input').value;
+            const startDate = document.querySelector('.date-input').value;
+            const gameDuration = parseInt(document.querySelector('.duration-input').value);
+            const courtsCount = parseInt(document.querySelector('.courts-input').value);
+            
+            if (comandy.length < 2) {
+                alert('Сначала создайте турнирную сетку!');
+                return;
+            }
+            
+            const tbody = document.getElementById('schedule-tbody');
+            tbody.innerHTML = '';
+            
+            let gameNumber = 1;
+            let currentTime = new Date(`${startDate}T${startTime}`);
+            let courtSchedule = Array(courtsCount).fill(null).map(() => new Date(currentTime));
+            
+            // Генерируем расписание для первого тура
+            const firstRoundMatches = Math.floor(comandy.length / 2);
+            
+            for (let i = 0; i < firstRoundMatches; i++) {
+                // Находим свободный корт
+                let courtIndex = 0;
+                let earliestTime = courtSchedule[0];
+                
+                for (let j = 1; j < courtsCount; j++) {
+                    if (courtSchedule[j] < earliestTime) {
+                        earliestTime = courtSchedule[j];
+                        courtIndex = j;
+                    }
+                }
+                
+                const gameTime = new Date(courtSchedule[courtIndex]);
+                const team1 = comandy[i * 2] || `команда${i * 2 + 1}`;
+                const team2 = comandy[i * 2 + 1] || `команда${i * 2 + 2}`;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${gameNumber}</td>
+                    <td>${gameTime.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</td>
+                    <td>${gameTime.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: '2-digit'})}</td>
+                    <td>${courtIndex + 1}</td>
+                    <td>${team1}</td>
+                    <td>${team2}</td>
+                    <td></td>
+                `;
+                
+                tbody.appendChild(row);
+                
+                // Обновляем время для этого корта
+                courtSchedule[courtIndex] = new Date(gameTime.getTime() + gameDuration * 60000);
+                gameNumber++;
+            }
+            
+            // Генерируем расписание для последующих туров
+            let remainingMatches = Math.floor(firstRoundMatches / 2);
+            
+            while (remainingMatches > 0) {
+                for (let i = 0; i < remainingMatches; i++) {
+                    // Находим свободный корт
+                    let courtIndex = 0;
+                    let earliestTime = courtSchedule[0];
+                    
+                    for (let j = 1; j < courtsCount; j++) {
+                        if (courtSchedule[j] < earliestTime) {
+                            earliestTime = courtSchedule[j];
+                            courtIndex = j;
+                        }
+                    }
+                    
+                    const gameTime = new Date(courtSchedule[courtIndex]);
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${gameNumber}</td>
+                        <td>${gameTime.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td>${gameTime.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: '2-digit'})}</td>
+                        <td>${courtIndex + 1}</td>
+                        <td>команда${Math.floor(Math.random() * comandy.length) + 1}</td>
+                        <td>команда${Math.floor(Math.random() * comandy.length) + 1}</td>
+                        <td></td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                    
+                    // Обновляем время для этого корта
+                    courtSchedule[courtIndex] = new Date(gameTime.getTime() + gameDuration * 60000);
+                    gameNumber++;
+                }
+                
+                remainingMatches = Math.floor(remainingMatches / 2);
+            }
+        }
+        
+        // Добавляем обработчик события для кнопки генерации расписания
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateBtn = document.querySelector('.generate-schedule-btn');
+            if (generateBtn) {
+                generateBtn.addEventListener('click', generateSchedule);
+            }
+        });
+        
+        // Загружаем команды по умолчанию при загрузке страницы
+        window.onload = function() {
+            loadTeams();
+        };
+    </script>
+        </div>
+    </div>
+</body>
+</html>
