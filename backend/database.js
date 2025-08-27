@@ -211,6 +211,15 @@ const teamQueries = {
                 else resolve(this.changes > 0);
             });
         });
+    },
+
+    deleteByTournamentId: (tournamentId) => {
+        return new Promise((resolve, reject) => {
+            db.run('DELETE FROM teams WHERE tournamentId = ?', [tournamentId], function(err) {
+                if (err) reject(err);
+                else resolve(this.changes);
+            });
+        });
     }
 };
 

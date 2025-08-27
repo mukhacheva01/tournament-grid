@@ -255,6 +255,17 @@ app.delete('/api/teams/:id', async (req, res) => {
     }
 });
 
+// Удаление всех команд турнира
+app.delete('/api/tournaments/:id/teams', async (req, res) => {
+    try {
+        await teamQueries.deleteByTournamentId(req.params.id);
+        res.status(204).send();
+    } catch (error) {
+        console.error('Ошибка удаления команд турнира:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
 
 app.get('/api/tournaments/:id/matches', async (req, res) => {
     try {

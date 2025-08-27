@@ -166,13 +166,163 @@ var gamid_oldid = [];   // вспом. массив, нужен в write_table
 var tablores = {};      // заглушка для табло
 var arasp = [];         // расписание
 
+// Получение ID турнира из URL
+function getTournamentIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id');
+}
+
+// Загрузка данных турнира с бэкенда
+async function loadTournamentData() {
+    const tournamentId = getTournamentIdFromUrl();
+    if (!tournamentId) {
+        alert('ID турнира не найден в URL');
+        return;
+    }
+    
+    try {
+        // Загружаем данные турнира
+        const tournamentResponse = await fetch(`/api/tournaments/${tournamentId}`);
+        const tournament = await tournamentResponse.json();
+        
+        // Обновляем заголовок страницы
+        document.querySelector('.main-header h1').innerHTML = `🏆 ${tournament.name}`;
+        
+        // Загружаем команды турнира
+        const teamsResponse = await fetch(`/api/tournaments/${tournamentId}/teams`);
+        const teams = await teamsResponse.json();
+        
+        if (teams.length > 0) {
+            comandy = teams.map(team => team.name);
+            document.getElementById('teamCount').value = comandy.length;
+            
+            // Загружаем состояние турнира
+            const stateResponse = await fetch(`/api/tournaments/${tournamentId}/state`);
+            if (stateResponse.ok) {
+                const state = await stateResponse.json();
+                if (state.bracket) {
+                    // Восстанавливаем состояние турнирной сетки
+                    restoreTournamentState(state);
+                } else {
+                    // Если состояние не сохранено, создаем новую сетку
+                    initializeTournament();
+                }
+            } else {
+                initializeTournament();
+            }
+        } else {
+            // Если команд нет, показываем форму для их добавления
+            alert('В турнире нет команд. Добавьте команды для создания сетки.');
+        }
+        
+        turnir_id = tournamentId;
+    } catch (error) {
+        console.error('Ошибка загрузки данных турнира:', error);
+        alert('Ошибка загрузки данных турнира');
+    }
+}
+
+// Инициализация турнира
+function initializeTournament() {
+    if (comandy.length >= 2) {
+        write_teams();
+        def_s();
+        write_table(s);
+        document.getElementById('rasp-settings').style.display = 'block';
+    }
+}
+
+// Восстановление состояния турнира
+function restoreTournamentState(state) {
+    try {
+        if (state.bracket) {
+            // Восстанавливаем глобальные переменные
+            if (state.bracket.setka) window.setka = state.bracket.setka;
+            if (state.bracket.s !== undefined) s = state.bracket.s;
+            if (state.bracket.arasp) arasp = state.bracket.arasp;
+            
+            // Отображаем восстановленное состояние
+            write_teams();
+            if (s > 0) {
+                write_table(s);
+                document.getElementById('rasp-settings').style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка восстановления состояния:', error);
+        initializeTournament();
+    }
+}
+
+// Сохранение состояния турнира
+async function saveTournamentState() {
+    const tournamentId = getTournamentIdFromUrl();
+    if (!tournamentId) return;
+    
+    try {
+        const state = {
+            bracket: {
+                setka: window.setka || {},
+                s: s,
+                arasp: arasp,
+                comandy: comandy
+            }
+        };
+        
+        await fetch(`/api/tournaments/${tournamentId}/state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(state)
+        });
+    } catch (error) {
+        console.error('Ошибка сохранения состояния:', error);
+    }
+}
+
+// Загрузка данных при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadTournamentData();
+});
+
 function generateTeams(cnt){
   return Array.from({length:cnt}, (_,i)=>`Команда ${i+1}`);
 }
 
-document.getElementById('startBtn').addEventListener('click',()=>{
+document.getElementById('startBtn').addEventListener('click', async ()=>{
   const cnt = Math.max(2, Math.min(64, Number(document.getElementById('teamCount').value||7)));
-  comandy = generateTeams(cnt);
+  const tournamentId = getTournamentIdFromUrl();
+  
+  if (tournamentId) {
+    // Создаем команды в базе данных
+    try {
+      // Сначала удаляем существующие команды
+      await fetch(`/api/tournaments/${tournamentId}/teams`, {
+        method: 'DELETE'
+      });
+      
+      // Создаем новые команды
+      const teams = Array.from({length:cnt}, (_,i)=>`Команда ${i+1}`);
+      for (let i = 0; i < teams.length; i++) {
+        await fetch(`/api/tournaments/${tournamentId}/teams`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: teams[i] })
+        });
+      }
+      
+      comandy = teams;
+    } catch (error) {
+      console.error('Ошибка создания команд:', error);
+      comandy = generateTeams(cnt);
+    }
+  } else {
+    comandy = generateTeams(cnt);
+  }
+  
   write_teams();      // показать список
   def_s();            // рассчитать размер сетки
   write_table(s);     // вывести схему
@@ -180,9 +330,9 @@ document.getElementById('startBtn').addEventListener('click',()=>{
   // Показываем настройки расписания после создания сетки
   document.getElementById('rasp-settings').style.display = 'block';
   
-  // Задержка для синхронизации с данными турнирной сетки
+  // Сохраняем состояние
   setTimeout(() => {
-    // Расписание матчей удалено
+    saveTournamentState();
   }, 100);
 });
 
@@ -244,8 +394,31 @@ function generateRaspTable() {
             return `${round} раунд`;
         }
         
-        function saveSchedule() {
+        async function saveSchedule() {
+            await saveTournamentState();
             alert('Расписание сохранено!');
+        }
+        
+        // Переопределяем функции main.js для автосохранения
+        const originalWriteTable = window.write_table;
+        window.write_table = function(...args) {
+            if (originalWriteTable) {
+                const result = originalWriteTable.apply(this, args);
+                // Сохраняем состояние после обновления таблицы
+                setTimeout(() => saveTournamentState(), 500);
+                return result;
+            }
+        };
+        
+        // Перехватываем изменения в турнирной сетке
+        const originalSetResult = window.set_result;
+        if (originalSetResult) {
+            window.set_result = function(...args) {
+                const result = originalSetResult.apply(this, args);
+                // Сохраняем состояние после установки результата
+                setTimeout(() => saveTournamentState(), 500);
+                return result;
+            };
         }
 </script>
 </body>

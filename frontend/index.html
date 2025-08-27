@@ -437,59 +437,85 @@
         </div>
 
         <div class="card-grid" id="card-grid">
-            <div class="card">
-                <h3>Чемпионат по футболу</h3>
-                <div class="card-status status-active">АКТИВНЫЙ</div>
-                <div class="card-info">
-                    <div class="participants">👥 Участников: 16</div>
-                    <div class="date">📅 Дата: 15.06.2023</div>
-                </div>
-                <div class="card-info">
-                    <div class="location">📍 Место: Стадион "Старт"</div>
-                </div>
-                <div class="card-actions">
-                    <button class="view-btn" onclick="toBracket(this)">Просмотр</button>
-                    <button class="icon-btn" onclick="editCard(this)">✏️</button>
-                    <button class="icon-btn" onclick="deleteCard(this)">🗑️</button>
-                </div>
-            </div>
-            <div class="card">
-                <h3>Турнир по баскетболу</h3>
-                <div class="card-status status-upcoming">ПРЕДСТОЯЩИЙ</div>
-                <div class="card-info">
-                    <div class="participants">👥 Участников: 8</div>
-                    <div class="date">📅 Дата: 20.06.2023</div>
-                </div>
-                <div class="card-info">
-                    <div class="location">📍 Место: Спортзал "Олимп"</div>
-                </div>
-                <div class="card-actions">
-                    <button class="view-btn" onclick="toBracket(this)">Просмотр</button>
-                    <button class="icon-btn" onclick="editCard(this)">✏️</button>
-                    <button class="icon-btn" onclick="deleteCard(this)">🗑️</button>
-                </div>
-            </div>
-            <div class="card">
-                <h3>Турнир по волейболу</h3>
-                <div class="card-status status-finished">ЗАВЕРШЕН</div>
-                <div class="card-info">
-                    <div class="participants">👥 Участников: 12</div>
-                    <div class="date">📅 Дата: 10.05.2023</div>
-                </div>
-                <div class="card-info">
-                    <div class="location">📍 Место: Пляж "Солнечный"</div>
-                </div>
-                <div class="card-actions">
-                    <button class="view-btn" onclick="toBracket(this)">Просмотр</button>
-                    <button class="icon-btn" onclick="editCard(this)">✏️</button>
-                    <button class="icon-btn" onclick="deleteCard(this)">🗑️</button>
-                </div>
-            </div>
+            <!-- Турниры будут загружены динамически -->
         </div>
     </div>
 <script>
+        let currentEditCard = null;
+        let tournaments = [];
         const modal = document.getElementById('modal');
         const searchInput = document.getElementById('search-input');
+        
+        // Загрузка турниров при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTournaments();
+        });
+        
+        async function loadTournaments() {
+            try {
+                const response = await fetch('/api/tournaments');
+                tournaments = await response.json();
+                renderTournaments();
+            } catch (error) {
+                console.error('Ошибка загрузки турниров:', error);
+            }
+        }
+        
+        function renderTournaments() {
+            const cardGrid = document.getElementById('card-grid');
+            cardGrid.innerHTML = '';
+            
+            tournaments.forEach(tournament => {
+                createCardElement(tournament);
+            });
+        }
+        
+        function createCardElement(tournament) {
+            const cardGrid = document.getElementById('card-grid');
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.tournamentId = tournament.id;
+            
+            const formattedDate = tournament.date ? new Date(tournament.date).toLocaleDateString('ru-RU') : 'Не указана';
+            const statusClass = getStatusClass(tournament.status);
+            const statusText = getStatusText(tournament.status);
+            
+            card.innerHTML = `
+                <h3>${tournament.name}</h3>
+                <div class="card-status ${statusClass}">${statusText}</div>
+                <div class="card-info">
+                    <div class="participants">👥 Участников: ${tournament.participantsCount || 0}</div>
+                    <div class="date">📅 Дата: ${formattedDate}</div>
+                </div>
+                <div class="card-info">
+                    <div class="location">📍 Место: ${tournament.location || 'Не указано'}</div>
+                </div>
+                <div class="card-actions">
+                    <button class="view-btn" onclick="toBracket(this)">Просмотр</button>
+                    <button class="icon-btn" onclick="editCard(this)">✏️</button>
+                    <button class="icon-btn" onclick="deleteCard(this)">🗑️</button>
+                    <button class="icon-btn" onclick="shareCard(this)">📤</button>
+                </div>
+            `;
+            
+            cardGrid.appendChild(card);
+        }
+        
+        function getStatusClass(status) {
+            switch(status) {
+                case 'active': return 'status-active';
+                case 'finished': return 'status-finished';
+                default: return 'status-upcoming';
+            }
+        }
+        
+        function getStatusText(status) {
+            switch(status) {
+                case 'active': return 'АКТИВНЫЙ';
+                case 'finished': return 'ЗАВЕРШЕН';
+                default: return 'ПРЕДСТОЯЩИЙ';
+            }
+        }
         
         // Модальное окно
         document.getElementById('open-modal').addEventListener('click', ()=>{ modal.style.display='flex'; });
@@ -521,118 +547,149 @@
         });
         
         // Создание/редактирование турнира
-        document.getElementById('create-form').addEventListener('submit', function(e){
+        document.getElementById('create-form').addEventListener('submit', async function(e){
             e.preventDefault();
             const name = document.getElementById('t-name').value.trim();
             const participants = document.getElementById('t-participants').value;
             const startDate = document.getElementById('t-start-date').value;
             const location = document.getElementById('t-location').value.trim();
             
-            // Форматирование даты
-            let dateText = '';
-            if (startDate) {
-                const date = new Date(startDate);
-                dateText = date.toLocaleDateString('ru-RU');
-            } else {
-                dateText = 'Дата не указана';
-            }
+            const tournamentData = {
+                name,
+                participantsCount: parseInt(participants) || 0,
+                date: startDate || null,
+                location: location || null,
+                status: 'upcoming'
+            };
             
-            // Проверяем, редактируем ли мы существующую карточку
-            if (this.dataset.editingCard === 'true') {
-                // Используем сохраненную прямую ссылку на карточку для более надежного поиска
-                const editingCard = this.editingCardElement;
-                
-                // Если карточка найдена, обновляем её
-                if (editingCard && editingCard.parentNode) {
-                    editingCard.querySelector('h3').textContent = name;
-                    editingCard.querySelector('.participants').textContent = `👥 Участников: ${participants}`;
-                    editingCard.querySelector('.date').textContent = `📅 Дата: ${dateText}`;
-                    editingCard.querySelector('.location').textContent = `📍 Место: ${location || 'Место не указано'}`;
+            try {
+                if (this.dataset.editingCard === 'true') {
+                    // Редактирование существующего турнира
+                    const tournamentId = this.editingCardElement.dataset.tournamentId;
+                    const response = await fetch(`/api/tournaments/${tournamentId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(tournamentData)
+                    });
+                    
+                    if (response.ok) {
+                        const updatedTournament = await response.json();
+                        const index = tournaments.findIndex(t => t.id == tournamentId);
+                        if (index !== -1) {
+                            tournaments[index] = updatedTournament;
+                        }
+                        renderTournaments();
+                    } else {
+                        alert('Ошибка обновления турнира');
+                    }
+                    
+                    // Сбрасываем флаг редактирования и очищаем ссылку
+                    delete this.dataset.editingCard;
+                    delete this.editingCardElement;
+                    
+                    // Возвращаем заголовок модального окна
+                    const modalHeader = modal.querySelector('.modal-header h2');
+                    modalHeader.innerHTML = '➕ Создать новый турнир';
+                    
+                    // Возвращаем текст кнопки
+                    const submitBtn = this.querySelector('.create-btn-modal');
+                    submitBtn.textContent = 'Создать';
+                } else {
+                    // Создание нового турнира
+                    const response = await fetch('/api/tournaments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(tournamentData)
+                    });
+                    
+                    if (response.ok) {
+                        const newTournament = await response.json();
+                        tournaments.push(newTournament);
+                        createCardElement(newTournament);
+                    } else {
+                        alert('Ошибка создания турнира');
+                    }
                 }
                 
-                // Сбрасываем флаг редактирования и очищаем ссылку
-                delete this.dataset.editingCard;
-                delete this.editingCardElement;
-                
-                // Возвращаем заголовок модального окна
-                const modalHeader = modal.querySelector('.modal-header h2');
-                modalHeader.innerHTML = '➕ Создать новый турнир';
-                
-                // Возвращаем текст кнопки
-                const submitBtn = this.querySelector('.create-btn-modal');
-                submitBtn.textContent = 'Создать';
-            } else {
-                // Создаем новую карточку
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>${name}</h3>
-                    <div class="card-status status-upcoming">ПРЕДСТОЯЩИЙ</div>
-                    <div class="card-info">
-                        <div class="participants">👥 Участников: ${participants}</div>
-                        <div class="date">📅 Дата: ${dateText}</div>
-                    </div>
-                    <div class="card-info">
-                        <div class="location">📍 Место: ${location || 'Место не указано'}</div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="view-btn" onclick="toBracket(this)">Просмотр</button>
-                        <button class="icon-btn" onclick="editCard(this)">✏️</button>
-                        <button class="icon-btn" onclick="deleteCard(this)">🗑️</button>
-                        <button class="icon-btn" onclick="shareCard(this)">📤</button>
-                    </div>
-                `;
-                
-                document.querySelector('.card-grid').appendChild(card);
+                modal.style.display='none';
+                this.reset();
+            } catch (error) {
+                console.error('Ошибка сохранения турнира:', error);
+                alert('Ошибка сохранения турнира');
             }
-            
-            modal.style.display='none';
-            this.reset();
         });
         
         // Функции для кнопок
-        function deleteCard(btn){ 
+        async function deleteCard(btn){ 
             if(confirm('Вы уверены, что хотите удалить этот турнир?')) {
-                btn.closest('.card').remove(); 
+                const card = btn.closest('.card');
+                const tournamentId = card.dataset.tournamentId;
+                
+                try {
+                    const response = await fetch(`/api/tournaments/${tournamentId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        card.remove();
+                        tournaments = tournaments.filter(t => t.id != tournamentId);
+                    } else {
+                        alert('Ошибка удаления турнира');
+                    }
+                } catch (error) {
+                    console.error('Ошибка удаления турнира:', error);
+                    alert('Ошибка удаления турнира');
+                }
             }
         }
         
-        function editCard(btn) {
+        async function editCard(btn) {
             const card = btn.closest('.card');
+            const tournamentId = card.dataset.tournamentId;
             const form = document.getElementById('create-form');
             
-            // Получаем данные из карточки
-            const title = card.querySelector('h3').textContent;
-            const participantsText = card.querySelector('.participants').textContent;
-            const dateText = card.querySelector('.date').textContent;
-            const locationText = card.querySelector('.location').textContent;
-            
-            // Извлекаем числовые значения
-            const participants = participantsText.match(/\d+/)[0];
-            
-            // Заполняем форму
-            document.getElementById('t-name').value = title;
-            document.getElementById('t-participants').value = participants;
-            document.getElementById('t-location').value = locationText.replace('📍 Место: ', '');
-            
-            // Устанавливаем флаг редактирования
-            form.dataset.editingCard = 'true';
-            form.editingCardElement = card;
-            
-            // Изменяем заголовок модального окна
-            const modalHeader = modal.querySelector('.modal-header h2');
-            modalHeader.innerHTML = '✏️ Редактировать турнир';
-            
-            // Изменяем текст кнопки
-            const submitBtn = form.querySelector('.create-btn-modal');
-            submitBtn.textContent = 'Сохранить';
-            
-            // Открываем модальное окно
-            modal.style.display = 'flex';
+            try {
+                const response = await fetch(`/api/tournaments/${tournamentId}`);
+                const tournament = await response.json();
+                
+                // Заполняем форму
+                document.getElementById('t-name').value = tournament.name;
+                document.getElementById('t-participants').value = tournament.participantsCount || '';
+                document.getElementById('t-start-date').value = tournament.date ? tournament.date.split('T')[0] : '';
+                document.getElementById('t-location').value = tournament.location || '';
+                
+                // Устанавливаем флаг редактирования
+                form.dataset.editingCard = 'true';
+                form.editingCardElement = card;
+                
+                // Изменяем заголовок модального окна
+                const modalHeader = modal.querySelector('.modal-header h2');
+                modalHeader.innerHTML = '✏️ Редактировать турнир';
+                
+                // Изменяем текст кнопки
+                const submitBtn = form.querySelector('.create-btn-modal');
+                submitBtn.textContent = 'Сохранить';
+                
+                // Открываем модальное окно
+                modal.style.display = 'flex';
+            } catch (error) {
+                console.error('Ошибка загрузки данных турнира:', error);
+                alert('Ошибка загрузки данных турнира');
+            }
         }
         
         function toBracket(btn){ 
-            window.location.href='tournament.html'; 
+            const card = btn.closest('.card');
+            const tournamentId = card.dataset.tournamentId;
+            if (tournamentId) {
+                window.location.href = `tournament.html?id=${tournamentId}`;
+            } else {
+                alert('ID турнира не найден');
+            }
         }
         
         function shareCard(btn) {
