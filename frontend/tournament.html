@@ -125,6 +125,22 @@
 <div id="tabl"></div>
 <div id="tablo"></div>
 
+<!-- Кнопка сохранения данных -->
+    <div class="save-button-container" style="margin: 20px 0; text-align: center;">
+        <button id="save-tournament-btn" class="save-btn" onclick="saveTournamentStateWithFeedback()" style="
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        " onmouseover="this.style.backgroundColor='#45a049'" onmouseout="if(!this.disabled) this.style.backgroundColor='#4CAF50'">Сохранить данные</button>
+        <div id="save-status" style="margin-top: 10px; font-weight: bold;"></div>
+    </div>
+
 <!-- Настройки расписания для функции rasp -->
 <div class="section" id="rasp-settings" style="display:none; margin-top:20px; padding:15px; background:#f8f9fa; border-radius:8px;">
     <h3>⚙️ Настройки расписания</h3>
@@ -189,8 +205,17 @@ async function loadTournamentData() {
         document.querySelector('.main-header h1').innerHTML = `🏆 ${tournament.name}`;
         
         // Загружаем команды турнира
-        const teamsResponse = await fetch(`/api/tournaments/${tournamentId}/teams`);
-        const teams = await teamsResponse.json();
+        let teams = [];
+        try {
+            const teamsResponse = await fetch(`/api/tournaments/${tournamentId}/teams`);
+            if (teamsResponse.ok) {
+                teams = await teamsResponse.json();
+            } else {
+                console.warn('Не удалось загрузить команды:', teamsResponse.status, teamsResponse.statusText);
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке команд:', error);
+        }
         
         if (teams.length > 0) {
             comandy = teams.map(team => team.name);
@@ -200,9 +225,9 @@ async function loadTournamentData() {
             const stateResponse = await fetch(`/api/tournaments/${tournamentId}/state`);
             if (stateResponse.ok) {
                 const state = await stateResponse.json();
-                if (state.bracket) {
+                if (state.state && state.state.bracket) {
                     // Восстанавливаем состояние турнирной сетки
-                    restoreTournamentState(state);
+                    restoreTournamentState(state.state);
                 } else {
                     // Если состояние не сохранено, создаем новую сетку
                     initializeTournament();
@@ -212,7 +237,9 @@ async function loadTournamentData() {
             }
         } else {
             // Если команд нет, показываем форму для их добавления
-            alert('В турнире нет команд. Добавьте команды для создания сетки.');
+            console.log('В турнире нет команд. Можно добавить команды для создания сетки.');
+            // Инициализируем пустую сетку
+            initializeTournament();
         }
         
         turnir_id = tournamentId;
@@ -263,9 +290,9 @@ async function saveTournamentState() {
         const state = {
             bracket: {
                 setka: window.setka || {},
-                s: s,
-                arasp: arasp,
-                comandy: comandy
+                s: window.s || [],
+                arasp: window.arasp || [],
+                comandy: window.comandy || []
             }
         };
         
@@ -281,9 +308,116 @@ async function saveTournamentState() {
     }
 }
 
+// Функция сохранения с визуальной обратной связью
+async function saveTournamentStateWithFeedback() {
+    const saveButton = document.getElementById('save-tournament-btn');
+    const saveStatus = document.getElementById('save-status');
+    
+    // Показываем процесс сохранения
+    saveButton.disabled = true;
+    saveButton.style.backgroundColor = '#cccccc';
+    saveButton.textContent = 'Сохранение...';
+    saveStatus.textContent = '';
+    saveStatus.style.color = '#666';
+    
+    const tournamentId = getTournamentIdFromUrl();
+    if (!tournamentId) {
+        saveStatus.textContent = 'Ошибка: Tournament ID не найден';
+        saveStatus.style.color = '#f44336';
+        resetSaveButton();
+        return;
+    }
+
+    try {
+        const state = {
+            bracket: {
+                setka: window.setka || {},
+                s: s,
+                arasp: arasp,
+                comandy: comandy
+            }
+        };
+
+        const response = await fetch(`/api/tournaments/${tournamentId}/state`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(state)
+        });
+
+        if (response.ok) {
+            saveStatus.textContent = 'Данные успешно сохранены!';
+            saveStatus.style.color = '#4CAF50';
+            console.log('Состояние турнира сохранено успешно');
+        } else {
+            saveStatus.textContent = 'Ошибка при сохранении данных';
+            saveStatus.style.color = '#f44336';
+            console.error('Ошибка при сохранении состояния турнира');
+        }
+    } catch (error) {
+        saveStatus.textContent = 'Ошибка соединения с сервером';
+        saveStatus.style.color = '#f44336';
+        console.error('Ошибка при сохранении состояния турнира:', error);
+    }
+    
+    resetSaveButton();
+    
+    // Скрываем статус через 3 секунды
+    setTimeout(() => {
+        saveStatus.textContent = '';
+    }, 3000);
+}
+
+// Функция сброса кнопки сохранения
+function resetSaveButton() {
+    const saveButton = document.getElementById('save-tournament-btn');
+    saveButton.disabled = false;
+    saveButton.style.backgroundColor = '#4CAF50';
+    saveButton.textContent = 'Сохранить данные';
+}
+
+// Функция для инициализации перехвата функций main.js
+function initializeFunctionInterception() {
+    // Переопределяем функции main.js для автосохранения
+    const originalWriteTable = window.write_table;
+    if (originalWriteTable) {
+        window.write_table = function(...args) {
+            const result = originalWriteTable.apply(this, args);
+            // Сохраняем состояние после обновления таблицы
+            setTimeout(() => saveTournamentState(), 500);
+            return result;
+        };
+    }
+    
+    // Перехватываем функцию rezult для автосохранения результатов матчей
+    const originalRezult = window.rezult;
+    if (originalRezult) {
+        window.rezult = function(...args) {
+            const result = originalRezult.apply(this, args);
+            // Сохраняем состояние после установки результата матча
+            setTimeout(() => saveTournamentState(), 500);
+            return result;
+        };
+    }
+    
+    // Дополнительно перехватываем araspset для сохранения изменений расписания
+    const originalAraspset = window.araspset;
+    if (originalAraspset) {
+        window.araspset = function(...args) {
+            const result = originalAraspset.apply(this, args);
+            // Сохраняем состояние после изменения расписания
+            setTimeout(() => saveTournamentState(), 300);
+            return result;
+        };
+    }
+}
+
 // Загрузка данных при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
     loadTournamentData();
+    // Инициализируем перехват функций после небольшой задержки
+    setTimeout(initializeFunctionInterception, 100);
 });
 
 function generateTeams(cnt){
@@ -399,27 +533,7 @@ function generateRaspTable() {
             alert('Расписание сохранено!');
         }
         
-        // Переопределяем функции main.js для автосохранения
-        const originalWriteTable = window.write_table;
-        window.write_table = function(...args) {
-            if (originalWriteTable) {
-                const result = originalWriteTable.apply(this, args);
-                // Сохраняем состояние после обновления таблицы
-                setTimeout(() => saveTournamentState(), 500);
-                return result;
-            }
-        };
-        
-        // Перехватываем изменения в турнирной сетке
-        const originalSetResult = window.set_result;
-        if (originalSetResult) {
-            window.set_result = function(...args) {
-                const result = originalSetResult.apply(this, args);
-                // Сохраняем состояние после установки результата
-                setTimeout(() => saveTournamentState(), 500);
-                return result;
-            };
-        }
+        // Функции перехвата инициализируются в initializeFunctionInterception()
 </script>
 </body>
 </html>

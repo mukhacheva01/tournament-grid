@@ -23,7 +23,7 @@ function initDatabase() {
             db.run(`CREATE TABLE IF NOT EXISTS tournaments (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
-                date TEXT NOT NULL,
+                date TEXT,
                 location TEXT,
                 description TEXT,
                 type TEXT,

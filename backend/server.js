@@ -123,14 +123,14 @@ app.get('/api/tournaments', async (req, res) => {
 app.post('/api/tournaments', async (req, res) => {
     const { name, date, location, description, type, participantsCount, seededCount } = req.body;
     
-    if (!name || !date) {
-        return res.status(400).json({ error: 'Название и дата обязательны' });
+    if (!name) {
+        return res.status(400).json({ error: 'Название обязательно' });
     }
     
     const tournament = {
         id: uuidv4(),
         name,
-        date,
+        date: date || null,
         location: location || '',
         description: description || '',
         type: type || 'single-elimination',
@@ -345,7 +345,30 @@ app.put('/api/matches/:id', async (req, res) => {
     }
 });
 
-// Сохранение состояния турнира
+// Сохранение состояния турнира (POST)
+app.post('/api/tournaments/:id/state', async (req, res) => {
+    try {
+        const state = req.body;
+        if (!state) {
+            return res.status(400).json({ error: 'Состояние турнира обязательно' });
+        }
+        
+        const updatedTournament = await tournamentQueries.update(req.params.id, {
+            state: JSON.stringify(state)
+        });
+        
+        if (!updatedTournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        res.json({ success: true, message: 'Состояние турнира сохранено' });
+    } catch (error) {
+        console.error('Ошибка сохранения состояния турнира:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Сохранение состояния турнира (PUT)
 app.put('/api/tournaments/:id/state', async (req, res) => {
     try {
         const { state } = req.body;
