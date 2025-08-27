@@ -30,6 +30,7 @@ function initDatabase() {
                 participantsCount INTEGER,
                 seededCount INTEGER DEFAULT 0,
                 status TEXT DEFAULT 'created',
+                state TEXT,
                 createdAt TEXT DEFAULT CURRENT_TIMESTAMP
             )`, (err) => {
                 if (err) {
@@ -153,6 +154,15 @@ const teamQueries = {
             });
         });
     },
+    
+    getByTournamentId: (tournamentId) => {
+        return new Promise((resolve, reject) => {
+            db.all('SELECT * FROM teams WHERE tournamentId = ? ORDER BY createdAt', [tournamentId], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+    },
 
     getById: (id) => {
         return new Promise((resolve, reject) => {
@@ -206,6 +216,26 @@ const teamQueries = {
 
 const matchQueries = {
     getByTournament: (tournamentId) => {
+        return new Promise((resolve, reject) => {
+            db.all(`
+                SELECT m.*, 
+                       t1.name as team1Name, 
+                       t2.name as team2Name,
+                       w.name as winnerName
+                FROM matches m
+                LEFT JOIN teams t1 ON m.team1Id = t1.id
+                LEFT JOIN teams t2 ON m.team2Id = t2.id
+                LEFT JOIN teams w ON m.winnerId = w.id
+                WHERE m.tournamentId = ?
+                ORDER BY m.round, m.position
+            `, [tournamentId], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+    },
+    
+    getByTournamentId: (tournamentId) => {
         return new Promise((resolve, reject) => {
             db.all(`
                 SELECT m.*, 

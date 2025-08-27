@@ -124,7 +124,23 @@
 <div id="teams" style="margin:15px 0"></div>
 <div id="tabl"></div>
 <div id="tablo"></div>
+
+<!-- Настройки расписания для функции rasp -->
+<div class="section" id="rasp-settings" style="display:none; margin-top:20px; padding:15px; background:#f8f9fa; border-radius:8px;">
+    <h3>⚙️ Настройки расписания</h3>
+    <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center;">
+        <label>Время: <input type="number" id="tbeginh" value="10" min="0" max="23" style="width:40px;">:<input type="number" id="tbeginmin" value="0" min="0" max="59" style="width:40px;"></label>
+        <label>Дата: <input type="number" id="tbegind" value="26" min="1" max="31" style="width:40px;">/<input type="number" id="tbeginmon" value="8" min="1" max="12" style="width:40px;">/<input type="number" id="tbeginy" value="25" min="0" max="99" style="width:40px;"></label>
+        <label>Корт: <input type="number" id="hcountcourt" value="2" min="1" max="10" style="width:50px;"></label>
+        <label>Интервал (мин): <input type="number" id="htimeset" value="30" min="10" max="120" style="width:60px;"></label>
+        <button onclick="generateRaspTable()" style="padding:8px 16px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">Создать расписание</button>
+    </div>
+</div>
+
 <div id="trasp"></div>
+
+<!-- Таблица расписания матчей -->
+
 <iframe name="transport" id="transport" style="display:none"></iframe>
 <iframe name="transp1" id="transp1" style="display:none"></iframe>
             </div>
@@ -160,7 +176,30 @@ document.getElementById('startBtn').addEventListener('click',()=>{
   write_teams();      // показать список
   def_s();            // рассчитать размер сетки
   write_table(s);     // вывести схему
+  
+  // Показываем настройки расписания после создания сетки
+  document.getElementById('rasp-settings').style.display = 'block';
+  
+  // Задержка для синхронизации с данными турнирной сетки
+  setTimeout(() => {
+    // Расписание матчей удалено
+  }, 100);
 });
+
+// Функция для генерации таблицы расписания с использованием оригинальной функции rasp
+function generateRaspTable() {
+  if (!window.setka || !window.s || comandy.length < 2) {
+    alert('Сначала создайте турнирную сетку!');
+    return;
+  }
+  
+  // Вызываем оригинальную функцию rasp из main.js
+  if (typeof rasp === 'function') {
+    rasp(true); // true означает начать новое расписание
+  } else {
+    alert('Функция rasp не найдена в main.js');
+  }
+}
 
 // Инициализация
         function loadTeams() {
@@ -192,6 +231,21 @@ document.getElementById('startBtn').addEventListener('click',()=>{
                 [comandy[i], comandy[j]] = [comandy[j], comandy[i]];
             }
             displayTeams();
+        }
+        
+
+        
+
+         
+         function getRoundName(round, totalRounds) {
+            if (round === totalRounds) return 'Финал';
+            if (round === totalRounds - 1) return 'Полуфинал';
+            if (round === totalRounds - 2) return 'Четвертьфинал';
+            return `${round} раунд`;
+        }
+        
+        function saveSchedule() {
+            alert('Расписание сохранено!');
         }
 </script>
 </body>

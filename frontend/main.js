@@ -85,6 +85,10 @@ document.getElementById('trh').src='/cgi-bin/vir'+'t/golos.pl?'+"turnir_id="+tur
 ///////
 }
 fsinhr(bye)
+// Обновляем расписание матчей после изменения результата
+if(typeof generateMatchSchedule === 'function'){
+  setTimeout(generateMatchSchedule, 50);
+}
 }
 function getCookie(name) {
   let matches = document.cookie.match(new RegExp(
@@ -210,6 +214,10 @@ document.getElementById("i"+v_w).innerHTML+=" <span class=lw>"+"W"+gamnast_gamvi
 }
 }
 //tablof()
+// Обновляем расписание матчей после обновления турнирной сетки
+if(typeof generateMatchSchedule === 'function'){
+  setTimeout(generateMatchSchedule, 100);
+}
 }
 
 function find_lw(ii,v_lw){
@@ -393,10 +401,10 @@ if(arasp[vs].court>vtbegin.countcourt){arasp[vs].court=1;arasp[vs].time+=vtbegin
 vtbeginTime.setTime(arasp[vs].time*10000);
 if(typeof setka[s][i][2] =="undefined") {cssi2=''}else{cssi2=comandy[setka[s][i][2]]}
 if(typeof setka[s][i][3] =="undefined") {cssi3=''}else{cssi3=comandy[setka[s][i][3]]}
-vst="<tr><td onclick='video("+vs+")'>"+vs+"<td><input id=tbeginh_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+("0"+vtbeginTime.getHours()).substr(-2,2)+"'  maxlength=2 onchange='araspset("+vs+")'>:<input id=tbeginmin_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+("0"+vtbeginTime.getMinutes()).substr(-2,2)+"'  maxlength=2 onchange='araspset("+vs+")'><td><input id=tbegind_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+("0"+vtbeginTime.getDate()).substr(-2,2)+"'  maxlength=2 onchange='araspset("+vs+")'>/<input id=tbeginmon_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+("0"+(vtbeginTime.getMonth()+1)).substr(-2,2)+"'  maxlength=2 onchange='araspset("+vs+")'>/<input id=tbeginy_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+(vtbeginTime.getYear()-100)+"'  maxlength=2 onchange='araspset("+vs+")'><td align=center><input id=tbeginc_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+arasp[vs].court+"'  maxlength=2 onchange='araspset("+vs+")'><td class='vinlus"+setka[s][i][4]+"'>"+cssi2+"<td class='vinlus"+(1-setka[s][i][4])+"'>"+cssi3+"<td><input id=tbeginr_"+vs+" class=whitefont type=text  value='"+arasp[vs].res+"' size=30 onchange='araspset("+vs+")'>"+vst;
+vst="<tr><td onclick='video("+vs+")'>"+vs+"<td><input id=tbeginh_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+('0'+vtbeginTime.getHours()).substr(-2,2)+"' size=2 maxlength=2 onchange='araspset("+vs+")'>:<input id=tbeginmin_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+('0'+vtbeginTime.getMinutes()).substr(-2,2)+"' size=2 maxlength=2 onchange='araspset("+vs+")'><td><input id=tbegind_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+('0'+vtbeginTime.getDate()).substr(-2,2)+"' size=2 maxlength=2 onchange='araspset("+vs+")'>/<input id=tbeginmon_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+('0'+(vtbeginTime.getMonth()+1)).substr(-2,2)+"' size=2 maxlength=2 onchange='araspset("+vs+")'>/<input id=tbeginy_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+(vtbeginTime.getYear()-100)+"' size=2 maxlength=2 onchange='araspset("+vs+")'><td align=center><input id=tbeginc_"+vs+" class=whitefon type=text pattern='\\d{1,2}' value='"+arasp[vs].court+"' size=2 maxlength=2 onchange='araspset("+vs+")'><td class='vinlus"+setka[s][i][4]+"'>"+cssi2+"<td class='vinlus"+(1-setka[s][i][4])+"'>"+cssi3+"<td><input id=tbeginr_"+vs+" class=whitefont type=text  value='"+arasp[vs].res+"' size=30 onchange='araspset("+vs+")'>"+vst;
 //}else{break}
 }}
-document.getElementById("trasp").innerHTML="<table class=gam border=1><tr><th>N</th><th>Р’СЂРµРјСЏ</th><th>Р”Р°С‚Р°</th><th>РљРѕСЂС‚</th><th>РљРѕРјР°РЅРґР° 1</th><th>РљРѕРјР°РЅРґР°2</th><th>Р РµР·СѓР»СЊС‚Р°С‚</th>"+vst+"</table>";
+document.getElementById("trasp").innerHTML="<table class=gam border=1><tr><th>N</th><th>Время</th><th>Дата</th><th>Корт</th><th>Команда 1</th><th>Команда 2</th><th>Результат</th>"+vst+"</table>";
 }
 
 function tablof(){

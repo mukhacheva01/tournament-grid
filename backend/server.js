@@ -36,24 +36,75 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 // Статические файлы
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Обработка маршрутов для SPA в продакшене
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-// Обработка всех остальных маршрутов для SPA
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-
-initDatabase().then(() => {
+initDatabase().then(async () => {
     console.log('База данных инициализирована успешно.');
+    
+    // Создаем тестовые турниры, если их нет
+    await createDefaultTournaments();
 }).catch(err => {
     console.error('Ошибка инициализации базы данных:', err);
 });
+
+// Функция создания тестовых турниров
+async function createDefaultTournaments() {
+    try {
+        // Проверяем, есть ли уже турниры
+        const existingTournaments = await tournamentQueries.getAll();
+        
+        if (existingTournaments.length === 0) {
+            console.log('Создание тестовых турниров...');
+            
+            const defaultTournaments = [
+                {
+                    id: uuidv4(),
+                    name: 'Летний турнир 2024',
+                    date: '2024-07-15',
+                    location: 'Спортивный комплекс "Олимп"',
+                    description: 'Летний турнир для 8 команд с 3 раундами',
+                    type: 'single-elimination',
+                    participantsCount: 8,
+                    seededCount: 0,
+                    status: 'created',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: uuidv4(),
+                    name: 'Кубок чемпионов',
+                    date: '2024-08-20',
+                    location: 'Центральный стадион',
+                    description: 'Престижный турнир на 16 команд',
+                    type: 'single-elimination',
+                    participantsCount: 16,
+                    seededCount: 0,
+                    status: 'created',
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: uuidv4(),
+                    name: 'Осенний кубок',
+                    date: '2024-09-10',
+                    location: 'Городской парк',
+                    description: 'Небольшой турнир на 4 команды',
+                    type: 'single-elimination',
+                    participantsCount: 4,
+                    seededCount: 0,
+                    status: 'created',
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            for (const tournament of defaultTournaments) {
+                await tournamentQueries.create(tournament);
+            }
+            
+            console.log('Тестовые турниры созданы успешно.');
+        }
+    } catch (error) {
+        console.error('Ошибка создания тестовых турниров:', error);
+    }
+}
 
 
 
@@ -283,6 +334,54 @@ app.put('/api/matches/:id', async (req, res) => {
     }
 });
 
+// Сохранение состояния турнира
+app.put('/api/tournaments/:id/state', async (req, res) => {
+    try {
+        const { state } = req.body;
+        if (!state) {
+            return res.status(400).json({ error: 'Состояние турнира обязательно' });
+        }
+        
+        const updatedTournament = await tournamentQueries.update(req.params.id, {
+            state: JSON.stringify(state)
+        });
+        
+        if (!updatedTournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        res.json({ success: true, message: 'Состояние турнира сохранено' });
+    } catch (error) {
+        console.error('Ошибка сохранения состояния турнира:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Загрузка состояния турнира
+app.get('/api/tournaments/:id/state', async (req, res) => {
+    try {
+        const tournament = await tournamentQueries.getById(req.params.id);
+        if (!tournament) {
+            return res.status(404).json({ error: 'Турнир не найден' });
+        }
+        
+        let state = null;
+        if (tournament.state) {
+            try {
+                state = JSON.parse(tournament.state);
+            } catch (parseError) {
+                console.error('Ошибка парсинга состояния турнира:', parseError);
+                state = null;
+            }
+        }
+        
+        res.json({ state });
+    } catch (error) {
+        console.error('Ошибка загрузки состояния турнира:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
 
 function generateBracket(teams, tournamentId) {
     const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
@@ -372,6 +471,15 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
+// Обработка маршрутов для SPA в продакшене
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+// Обработка всех остальных маршрутов для SPA
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Сервер запущен на порту ${PORT}`);

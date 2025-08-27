@@ -200,72 +200,7 @@ function shuffleTeams() {
     console.log('Команды перемешаны');
 }
 
-// Функция генерации расписания (базовая версия)
-function generateSchedule() {
-    const scheduleBody = document.getElementById('schedule-tbody');
-    
-    if (!scheduleBody) {
-        console.error('Элемент schedule-tbody не найден');
-        return;
-    }
-    
-    // Очищаем предыдущее расписание
-    scheduleBody.innerHTML = '';
-    
-    if (comandy.length < 2) {
-        scheduleBody.innerHTML = '<tr><td colspan="7">Недостаточно команд для создания расписания</td></tr>';
-        return;
-    }
-    
-    // Получаем параметры расписания
-    const timeInput = document.querySelector('.time-input');
-    const dateInput = document.querySelector('.date-input');
-    const durationInput = document.querySelector('.duration-input');
-    const courtsInput = document.querySelector('.courts-input');
-    
-    const startTime = timeInput ? timeInput.value : '10:00';
-    const startDate = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
-    const gameDuration = durationInput ? parseInt(durationInput.value) : 40;
-    const courtCount = courtsInput ? parseInt(courtsInput.value) : 2;
-    
-    // Создаем базовое расписание для первого раунда
-    const firstRoundMatches = Math.pow(2, s-1);
-    let currentTime = new Date(`${startDate}T${startTime}:00`);
-    let currentCourt = 1;
-    let gameNumber = 1;
-    
-    for (let matchIndex = 1; matchIndex <= firstRoundMatches; matchIndex++) {
-        const match = setka[s][matchIndex];
-        if (!match || match[2] === undefined || match[3] === undefined) continue;
-        
-        const team1 = comandy[match[2]] || 'TBD';
-        const team2 = comandy[match[3]] || 'TBD';
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${gameNumber}</td>
-            <td>${currentTime.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</td>
-            <td>${currentTime.toLocaleDateString('ru-RU')}</td>
-            <td>${currentCourt}</td>
-            <td>${team1}</td>
-            <td>${team2}</td>
-            <td><input type="text" placeholder="Результат" class="result-input"></td>
-        `;
-        
-        scheduleBody.appendChild(row);
-        
-        // Переходим к следующему времени и корту
-        currentCourt++;
-        if (currentCourt > courtCount) {
-            currentCourt = 1;
-            currentTime.setMinutes(currentTime.getMinutes() + gameDuration);
-        }
-        
-        gameNumber++;
-    }
-    
-    console.log('Расписание создано');
-}
+
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
@@ -287,4 +222,3 @@ window.displayTeams = displayTeams;
 window.generateBracket = generateBracket;
 window.resetTournament = resetTournament;
 window.shuffleTeams = shuffleTeams;
-window.generateSchedule = generateSchedule;

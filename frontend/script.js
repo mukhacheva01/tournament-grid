@@ -23,8 +23,19 @@ let tournamentModal;
 let closeModalBtn;
 let tournamentForm;
 
+// Автосохранение
+let autoSaveInterval = null;
+let hasUnsavedChanges = false;
+let lastSaveTime = null;
+
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем, что мы не на странице tournament.html
+    if (window.location.pathname.includes('tournament.html')) {
+        console.log('Страница tournament.html - пропускаем инициализацию script.js');
+        return;
+    }
+    
     // Инициализируем DOM элементы
     initializeDOMElements();
     
@@ -145,6 +156,137 @@ function setupEventListeners() {
     const systemHealthBtn = document.getElementById('system-health-btn');
     if (systemHealthBtn) {
         systemHealthBtn.addEventListener('click', showSystemHealth);
+    }
+    
+    // Запуск автосохранения
+    startAutoSave();
+    
+    // Обработчик закрытия страницы
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = 'У вас есть несохраненные изменения. Вы уверены, что хотите покинуть страницу?';
+        }
+    });
+}
+
+// Функции автосохранения
+function startAutoSave() {
+    // Автосохранение каждые 30 секунд
+    autoSaveInterval = setInterval(async () => {
+        if (hasUnsavedChanges && currentTournament) {
+            await autoSaveTournamentState();
+        }
+    }, 30000);
+    
+    console.log('Автосохранение запущено');
+}
+
+function stopAutoSave() {
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+        autoSaveInterval = null;
+        console.log('Автосохранение остановлено');
+    }
+}
+
+async function autoSaveTournamentState() {
+    if (!currentTournament) return;
+    
+    try {
+        // Сохраняем состояние турнира
+        const tournamentState = {
+            teams: teams,
+            bracketData: bracketData,
+            matchSchedule: matchSchedule,
+            lastModified: new Date().toISOString()
+        };
+        
+        // Обновляем турнир в базе данных
+        await api.updateTournament(currentTournament.id, {
+            ...currentTournament,
+            state: JSON.stringify(tournamentState)
+        });
+        
+        hasUnsavedChanges = false;
+        lastSaveTime = new Date();
+        
+        // Показываем индикатор сохранения
+        showSaveIndicator('Автосохранение выполнено');
+        
+        console.log('Автосохранение выполнено:', lastSaveTime);
+    } catch (error) {
+        console.error('Ошибка автосохранения:', error);
+        showNotification('Ошибка автосохранения: ' + error.message, 'error');
+    }
+}
+
+function markAsChanged() {
+    hasUnsavedChanges = true;
+    updateSaveIndicator();
+    
+    // Автоматически сохраняем состояние турнира при изменениях
+    if (typeof saveTournamentState === 'function' && window.turnir_id) {
+        saveTournamentState(window.turnir_id);
+    }
+}
+
+function showSaveIndicator(message) {
+    // Создаем или обновляем индикатор сохранения
+    let indicator = document.getElementById('save-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'save-indicator';
+        indicator.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        `;
+        document.body.appendChild(indicator);
+    }
+    
+    indicator.textContent = message;
+    indicator.style.opacity = '1';
+    
+    // Скрываем через 3 секунды
+    setTimeout(() => {
+        indicator.style.opacity = '0';
+    }, 3000);
+}
+
+function updateSaveIndicator() {
+    const indicator = document.getElementById('save-status');
+    if (indicator) {
+        if (hasUnsavedChanges) {
+            indicator.textContent = 'Есть несохраненные изменения';
+            indicator.style.color = '#ff9800';
+        } else {
+            indicator.textContent = lastSaveTime ? `Сохранено: ${lastSaveTime.toLocaleTimeString()}` : 'Сохранено';
+            indicator.style.color = '#4CAF50';
+        }
+    }
+}
+
+async function loadTournamentState(tournament) {
+    try {
+        if (tournament.state) {
+            const state = JSON.parse(tournament.state);
+            teams = state.teams || [];
+            bracketData = state.bracketData || null;
+            matchSchedule = state.matchSchedule || [];
+            
+            console.log('Состояние турнира загружено:', state.lastModified);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки состояния турнира:', error);
     }
 }
 
@@ -816,6 +958,10 @@ function viewTournamentBracket(id) {
     const tournamentToView = tournaments.find(t => t.id === id);
     if (tournamentToView) {
         currentTournament = tournamentToView;
+        
+        // Загружаем сохраненное состояние турнира
+        loadTournamentState(tournamentToView);
+        
         updateTournamentInfo();
         showSection('tournament-bracket-section');
         document.querySelectorAll('.main-nav a').forEach(item => {

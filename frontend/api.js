@@ -123,6 +123,19 @@ class TournamentAPI {
             method: 'DELETE'
         });
     }
+
+    // Сохранение состояния турнира
+    async saveTournamentState(tournamentId, state) {
+        return this.request(`/tournaments/${tournamentId}/state`, {
+            method: 'PUT',
+            body: { state }
+        });
+    }
+
+    // Загрузка состояния турнира
+    async loadTournamentState(tournamentId) {
+        return this.request(`/tournaments/${tournamentId}/state`);
+    }
 }
 
 
