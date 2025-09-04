@@ -7,7 +7,7 @@ const { initDatabase, tournamentQueries, teamQueries, matchQueries } = require('
 
 // Загрузка переменных окружения из .env файла в режиме разработки
 if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+    require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 }
 
 const app = express();
