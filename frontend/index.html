@@ -465,9 +465,13 @@
             const cardGrid = document.getElementById('card-grid');
             cardGrid.innerHTML = '';
             
-            tournaments.forEach(tournament => {
-                createCardElement(tournament);
-            });
+            if (Array.isArray(tournaments)) {
+                tournaments.forEach(tournament => {
+                    createCardElement(tournament);
+                });
+            } else {
+                cardGrid.innerHTML = '<div class="error-message">Не удалось загрузить турниры. Пожалуйста, проверьте подключение к базе данных.</div>';
+            }
         }
         
         function createCardElement(tournament) {

@@ -1,25 +1,27 @@
 class TournamentAPI {
     constructor(baseURL = null) {
-        // Определяем базовый URL в зависимости от окружения
-        if (baseURL) {
-            this.baseURL = baseURL;
-        } else {
-            // В продакшене API находится на том же домене
-            const isProduction = window.location.hostname !== 'localhost';
-            this.baseURL = isProduction ? '/api' : 'http://localhost:3000/api';
-        }
+    if (baseURL) {
+        this.baseURL = baseURL;
+    } else {
+        // Всегда используем абсолютный URL
+        this.baseURL = window.location.origin + '/api';
+        
+        // Для отладки
+        console.log('API Base URL:', this.baseURL);
+    }
+
     }
 
 
     async request(endpoint, options = {}) {
-        const url = `${this.baseURL}${endpoint}`;
-        const config = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        };
+    const config = {
+        credentials: 'include', // Важно для продакшена
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        },
+        ...options
+    };
 
         if (config.body && typeof config.body === 'object') {
             config.body = JSON.stringify(config.body);
@@ -139,7 +141,7 @@ class TournamentAPI {
 }
 
 
-const api = new TournamentAPI();
+
 
 
 if (typeof module !== 'undefined' && module.exports) {

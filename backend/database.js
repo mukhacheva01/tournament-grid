@@ -1,76 +1,82 @@
 const mysql = require('mysql2/promise');
-const path = require('path');
+require('dotenv').config();
 
-// Конфигурация подключения к MySQL
-const dbConfig = {
+// Конфигурация MySQL
+const config = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'tournament_db',
     port: process.env.DB_PORT || 3306,
-    charset: 'utf8mb4'
-};
-
-// Создание пула подключений
-const pool = mysql.createPool({
-    ...dbConfig,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-});
+};
 
-console.log(`Подключение к MySQL базе данных: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`);
+// Создание пула соединений
+const pool = mysql.createPool(config);
 
+console.log('Подключение к MySQL базе данных:', config.host + ':' + config.port + '/' + config.database);
+
+// Инициализация базы данных
 async function initDatabase() {
     try {
-        const connection = await pool.getConnection();
+        console.log('Инициализация MySQL базы данных');
         
-        await connection.execute(`CREATE TABLE IF NOT EXISTS tournaments (
-            id VARCHAR(36) PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            date VARCHAR(20),
-            location VARCHAR(255),
-            description TEXT,
-            type VARCHAR(50),
-            participantsCount INT,
-            seededCount INT DEFAULT 0,
-            status VARCHAR(20) DEFAULT 'created',
-            state TEXT,
-            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`);
+        // Создание таблицы tournaments
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS tournaments (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description TEXT,
+                startDate TIMESTAMP NULL,
+                endDate TIMESTAMP NULL,
+                maxTeams INT DEFAULT 8,
+                status VARCHAR(50) DEFAULT 'upcoming',
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        `);
         console.log('Таблица tournaments создана или уже существует.');
-
-        await connection.execute(`CREATE TABLE IF NOT EXISTS teams (
-            id VARCHAR(36) PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            tournamentId VARCHAR(36) NOT NULL,
-            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (tournamentId) REFERENCES tournaments (id) ON DELETE CASCADE
-        )`);
+        
+        // Создание таблицы teams
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS teams (
+                id VARCHAR(255) PRIMARY KEY,
+                tournamentId VARCHAR(255) NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                players TEXT,
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tournamentId) REFERENCES tournaments(id) ON DELETE CASCADE
+            )
+        `);
         console.log('Таблица teams создана или уже существует.');
-
-        await connection.execute(`CREATE TABLE IF NOT EXISTS matches (
-            id VARCHAR(36) PRIMARY KEY,
-            tournamentId VARCHAR(36) NOT NULL,
-            round INT NOT NULL,
-            position INT NOT NULL,
-            team1Id VARCHAR(36),
-            team2Id VARCHAR(36),
-            team1Score INT DEFAULT 0,
-            team2Score INT DEFAULT 0,
-            winnerId VARCHAR(36),
-            status VARCHAR(20) DEFAULT 'pending',
-            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (tournamentId) REFERENCES tournaments (id) ON DELETE CASCADE,
-            FOREIGN KEY (team1Id) REFERENCES teams (id) ON DELETE SET NULL,
-            FOREIGN KEY (team2Id) REFERENCES teams (id) ON DELETE SET NULL,
-            FOREIGN KEY (winnerId) REFERENCES teams (id) ON DELETE SET NULL
-        )`);
+        
+        // Создание таблицы matches
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS matches (
+                id VARCHAR(255) PRIMARY KEY,
+                tournamentId VARCHAR(255) NOT NULL,
+                round INT NOT NULL,
+                position INT NOT NULL,
+                team1Id VARCHAR(255),
+                team2Id VARCHAR(255),
+                team1Score INT DEFAULT 0,
+                team2Score INT DEFAULT 0,
+                winnerId VARCHAR(255),
+                status VARCHAR(50) DEFAULT 'pending',
+                createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (tournamentId) REFERENCES tournaments(id) ON DELETE CASCADE,
+                FOREIGN KEY (team1Id) REFERENCES teams(id) ON DELETE SET NULL,
+                FOREIGN KEY (team2Id) REFERENCES teams(id) ON DELETE SET NULL,
+                FOREIGN KEY (winnerId) REFERENCES teams(id) ON DELETE SET NULL
+            )
+        `);
         console.log('Таблица matches создана или уже существует.');
         
-        connection.release();
+        console.log('База данных инициализирована успешно.');
     } catch (error) {
-        console.error('Ошибка инициализации базы данных:', error.message);
+        console.error('Ошибка при инициализации базы данных:', error);
         throw error;
     }
 }
@@ -78,8 +84,8 @@ async function initDatabase() {
 const tournamentQueries = {
     getAll: async () => {
         try {
-            const [rows] = await pool.execute('SELECT * FROM tournaments ORDER BY createdAt DESC');
-            return rows;
+            const [tournaments] = await pool.execute('SELECT * FROM tournaments ORDER BY createdAt DESC');
+            return tournaments;
         } catch (error) {
             throw error;
         }
@@ -87,8 +93,8 @@ const tournamentQueries = {
 
     getById: async (id) => {
         try {
-            const [rows] = await pool.execute('SELECT * FROM tournaments WHERE id = ?', [id]);
-            return rows[0] || null;
+            const [tournaments] = await pool.execute('SELECT * FROM tournaments WHERE id = ?', [id]);
+            return tournaments[0];
         } catch (error) {
             throw error;
         }
@@ -96,12 +102,12 @@ const tournamentQueries = {
 
     create: async (tournament) => {
         try {
-            const { id, name, date, location, description, type, participantsCount, seededCount } = tournament;
-            await pool.execute(
-                'INSERT INTO tournaments (id, name, date, location, description, type, participantsCount, seededCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [id, name, date, location, description, type, participantsCount, seededCount]
+            const { id, name, description, startDate, endDate, maxTeams, status } = tournament;
+            const [result] = await pool.execute(
+                'INSERT INTO tournaments (id, name, description, startDate, endDate, maxTeams, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [id, name, description, startDate, endDate, maxTeams, status]
             );
-            return { id, ...tournament };
+            return { insertId: result.insertId, affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -109,15 +115,15 @@ const tournamentQueries = {
 
     update: async (id, updates) => {
         try {
-            const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+            const fields = Object.keys(updates);
             const values = Object.values(updates);
-            values.push(id);
+            const setClause = fields.map(field => `${field} = ?`).join(', ');
             
             const [result] = await pool.execute(
-                `UPDATE tournaments SET ${fields} WHERE id = ?`,
-                values
+                `UPDATE tournaments SET ${setClause} WHERE id = ?`,
+                [...values, id]
             );
-            return result.affectedRows > 0;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -126,7 +132,7 @@ const tournamentQueries = {
     delete: async (id) => {
         try {
             const [result] = await pool.execute('DELETE FROM tournaments WHERE id = ?', [id]);
-            return result.affectedRows > 0;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -136,8 +142,8 @@ const tournamentQueries = {
 const teamQueries = {
     getByTournament: async (tournamentId) => {
         try {
-            const [rows] = await pool.execute('SELECT * FROM teams WHERE tournamentId = ? ORDER BY createdAt', [tournamentId]);
-            return rows;
+            const [teams] = await pool.execute('SELECT * FROM teams WHERE tournamentId = ? ORDER BY createdAt', [tournamentId]);
+            return teams;
         } catch (error) {
             throw error;
         }
@@ -145,8 +151,8 @@ const teamQueries = {
     
     getByTournamentId: async (tournamentId) => {
         try {
-            const [rows] = await pool.execute('SELECT * FROM teams WHERE tournamentId = ? ORDER BY createdAt', [tournamentId]);
-            return rows;
+            const [teams] = await pool.execute('SELECT * FROM teams WHERE tournamentId = ? ORDER BY createdAt', [tournamentId]);
+            return teams;
         } catch (error) {
             throw error;
         }
@@ -154,8 +160,8 @@ const teamQueries = {
 
     getById: async (id) => {
         try {
-            const [rows] = await pool.execute('SELECT * FROM teams WHERE id = ?', [id]);
-            return rows[0] || null;
+            const [teams] = await pool.execute('SELECT * FROM teams WHERE id = ?', [id]);
+            return teams[0];
         } catch (error) {
             throw error;
         }
@@ -163,12 +169,12 @@ const teamQueries = {
 
     create: async (team) => {
         try {
-            const { id, name, tournamentId } = team;
-            await pool.execute(
-                'INSERT INTO teams (id, name, tournamentId) VALUES (?, ?, ?)',
-                [id, name, tournamentId]
+            const { id, tournamentId, name, players } = team;
+            const [result] = await pool.execute(
+                'INSERT INTO teams (id, tournamentId, name, players) VALUES (?, ?, ?, ?)',
+                [id, tournamentId, name, players]
             );
-            return { id, ...team };
+            return { insertId: result.insertId, affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -176,15 +182,15 @@ const teamQueries = {
 
     update: async (id, updates) => {
         try {
-            const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+            const fields = Object.keys(updates);
             const values = Object.values(updates);
-            values.push(id);
+            const setClause = fields.map(field => `${field} = ?`).join(', ');
             
             const [result] = await pool.execute(
-                `UPDATE teams SET ${fields} WHERE id = ?`,
-                values
+                `UPDATE teams SET ${setClause} WHERE id = ?`,
+                [...values, id]
             );
-            return result.affectedRows > 0;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -193,7 +199,7 @@ const teamQueries = {
     delete: async (id) => {
         try {
             const [result] = await pool.execute('DELETE FROM teams WHERE id = ?', [id]);
-            return result.affectedRows > 0;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -202,7 +208,7 @@ const teamQueries = {
     deleteByTournamentId: async (tournamentId) => {
         try {
             const [result] = await pool.execute('DELETE FROM teams WHERE tournamentId = ?', [tournamentId]);
-            return result.affectedRows;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -216,11 +222,11 @@ const matchQueries = {
                 SELECT m.*, 
                        t1.name as team1Name, 
                        t2.name as team2Name,
-                       w.name as winnerName
+                       tw.name as winnerName
                 FROM matches m
                 LEFT JOIN teams t1 ON m.team1Id = t1.id
                 LEFT JOIN teams t2 ON m.team2Id = t2.id
-                LEFT JOIN teams w ON m.winnerId = w.id
+                LEFT JOIN teams tw ON m.winnerId = tw.id
                 WHERE m.tournamentId = ?
                 ORDER BY m.round, m.position
             `, [tournamentId]);
@@ -236,11 +242,11 @@ const matchQueries = {
                 SELECT m.*, 
                        t1.name as team1Name, 
                        t2.name as team2Name,
-                       w.name as winnerName
+                       tw.name as winnerName
                 FROM matches m
                 LEFT JOIN teams t1 ON m.team1Id = t1.id
                 LEFT JOIN teams t2 ON m.team2Id = t2.id
-                LEFT JOIN teams w ON m.winnerId = w.id
+                LEFT JOIN teams tw ON m.winnerId = tw.id
                 WHERE m.tournamentId = ?
                 ORDER BY m.round, m.position
             `, [tournamentId]);
@@ -252,12 +258,12 @@ const matchQueries = {
 
     create: async (match) => {
         try {
-            const { id, tournamentId, round, position, team1Id, team2Id } = match;
-            await pool.execute(
-                'INSERT INTO matches (id, tournamentId, round, position, team1Id, team2Id) VALUES (?, ?, ?, ?, ?, ?)',
-                [id, tournamentId, round, position, team1Id, team2Id]
+            const { id, tournamentId, round, position, team1Id, team2Id, team1Score, team2Score, winnerId, status } = match;
+            const [result] = await pool.execute(
+                'INSERT INTO matches (id, tournamentId, round, position, team1Id, team2Id, team1Score, team2Score, winnerId, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [id, tournamentId, round, position, team1Id, team2Id, team1Score, team2Score, winnerId, status]
             );
-            return { id, ...match };
+            return { insertId: result.insertId, affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -265,15 +271,15 @@ const matchQueries = {
 
     update: async (id, updates) => {
         try {
-            const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+            const fields = Object.keys(updates);
             const values = Object.values(updates);
-            values.push(id);
+            const setClause = fields.map(field => `${field} = ?`).join(', ');
             
             const [result] = await pool.execute(
-                `UPDATE matches SET ${fields} WHERE id = ?`,
-                values
+                `UPDATE matches SET ${setClause} WHERE id = ?`,
+                [...values, id]
             );
-            return result.affectedRows > 0;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -282,7 +288,7 @@ const matchQueries = {
     delete: async (id) => {
         try {
             const [result] = await pool.execute('DELETE FROM matches WHERE id = ?', [id]);
-            return result.affectedRows > 0;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }
@@ -291,7 +297,7 @@ const matchQueries = {
     deleteByTournament: async (tournamentId) => {
         try {
             const [result] = await pool.execute('DELETE FROM matches WHERE tournamentId = ?', [tournamentId]);
-            return result.affectedRows;
+            return { affectedRows: result.affectedRows };
         } catch (error) {
             throw error;
         }

@@ -3,12 +3,12 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const { initDatabase, tournamentQueries, teamQueries, matchQueries } = require('./database');
 
-// Загрузка переменных окружения из .env файла в режиме разработки
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-}
+// Загрузка переменных окружения из .env файла
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
+// Импорт модулей базы данных после загрузки переменных окружения
+const { initDatabase, tournamentQueries, teamQueries, matchQueries } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
